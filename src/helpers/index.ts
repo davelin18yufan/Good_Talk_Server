@@ -1,2 +1,2 @@
-export { ErrorInternal } from './ErrorInternal'
-export { resultPaginated } from './pagination'
+export { ErrorInternal } from "../middlewares/ErrorInternal"
+export { resultPaginated } from "./pagination"

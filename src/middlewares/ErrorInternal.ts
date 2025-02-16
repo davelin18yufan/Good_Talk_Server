@@ -6,11 +6,12 @@ export const ErrorInternal = (err: Error,
     if (err instanceof Error) {
       return response.status(400).json({
         message: err.message,
-      });
+        ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
+      })
     }
 
     return response.status(500).json({
       status: "error",
       message: `Internal server error - ${err}`,
-    });
+    })
   }

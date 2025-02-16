@@ -1,16 +1,19 @@
-import { IResultPaginated } from "../dtos";
-import { paginate } from 'arrpag'
+import { IResultPaginated } from "../types"
+import { paginate } from "arrpag"
 
-export const resultPaginated = async (content: any, page: number, perPage: number): 
-Promise<IResultPaginated> => {
+export const resultPaginated = async (
+  content: any,
+  page: number,
+  perPage: number
+): Promise<IResultPaginated> => {
   const pagination = paginate(content, page, perPage)
   const successResponse = {
     status: 200,
-    message: "List returned successfully"
+    message: "List returned successfully",
   }
 
   return {
-    data: (content.length === 0) ? [] : pagination.results,
+    data: content.length === 0 ? [] : pagination.results,
     totalItems: pagination.totalResults,
     return: successResponse,
     paginator: {
@@ -19,8 +22,8 @@ Promise<IResultPaginated> => {
       nextPage: pagination.nextPage,
       prevPage: pagination.prevPage,
       perPage: pagination.perPage,
-      totalResults: pagination.totalResults, 
-      totalCurrentResults: pagination.totalCurrentResults 
-    }
+      totalResults: pagination.totalResults,
+      totalCurrentResults: pagination.totalCurrentResults,
+    },
   }
 }

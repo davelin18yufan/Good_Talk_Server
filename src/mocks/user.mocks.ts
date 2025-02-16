@@ -1,11 +1,11 @@
-import { IUserRequest } from "../dtos";
+import { IUserRequest } from "../types"
 
 export const createUserMock: IUserRequest = {
   email: "root.company@gmail.com",
-  name: "Admin"
+  name: "Admin",
 }
 
 export const updateUserMock: IUserRequest = {
   email: "root@gmail.com",
-  name: "root"
+  name: "root",
 }
