@@ -3,7 +3,7 @@ import morgan from "morgan"
 import cors from "cors"
 
 import { routes } from "@/src/routes"
-import { ErrorInternal } from "./middlewares/ErrorInternal"
+import { AppError, ErrorInternal } from "./middlewares/ErrorInternal"
 
 const app = express()
 
@@ -25,7 +25,8 @@ app.get('/health', (req, res) => {
 });
 
 // Error handling
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+
+app.use((err: AppError, req: express.Request, res: express.Response, next: express.NextFunction) => {
   ErrorInternal(err, req, res, next);
 });
 
