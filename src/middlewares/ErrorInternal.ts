@@ -1,17 +1,29 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express"
 
-export const ErrorInternal = (err: Error, 
-  request: Request, 
-  response: Response, next: NextFunction) => {
-    if (err instanceof Error) {
-      return response.status(400).json({
-        message: err.message,
-        ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
-      })
-    }
+export class AppError extends Error {
+  status: number
 
-    return response.status(500).json({
-      status: "error",
-      message: `Internal server error - ${err}`,
-    })
+  constructor(message: string, status: number = 500) {
+    super(message)
+    this.status = status
+    Error.captureStackTrace(this, this.constructor)
   }
+}
+
+export const ErrorInternal = (
+  err: AppError,
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  console.error(err.stack)
+
+  const status = err.status || 500
+  const message = err.message || "Server Internal Error!"
+
+  res.status(status).json({
+    status: "error",
+    message,
+    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
+  })
+}

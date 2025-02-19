@@ -16,6 +16,10 @@ const pool = new Pool({
   connectionTimeoutMillis: 2000, // How long to wait for a connection
 })
 
+pool.on("connect", () => {
+  console.log("Connected to PostgreSQL! 🚀")
+})
+
 // The pool will emit an error on behalf of any idle clients
 pool.on("error", (err) => {
   console.error("Unexpected error on idle client", err)
