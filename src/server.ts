@@ -2,7 +2,7 @@ import express from "express"
 import morgan from "morgan"
 import cors from "cors"
 
-import { routes } from "@/src/routes"
+import { router } from "@/src/routes"
 import { AppError, ErrorInternal } from "./middlewares/ErrorInternal"
 
 const app = express()
@@ -18,7 +18,7 @@ app.use(express.urlencoded({ extended: true }))
 app.use(morgan("dev"))
 
 // Routes
-app.use(routes)
+app.use(router)
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK' });

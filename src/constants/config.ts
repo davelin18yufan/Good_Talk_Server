@@ -7,3 +7,5 @@ export const {
   HOST_APP,
   NODE_ENV
 } = process.env 
+
+export const DATABASE_PREFIX = `"${process.env.DATABASE_PREFIX}"` || "GoodTalk"
