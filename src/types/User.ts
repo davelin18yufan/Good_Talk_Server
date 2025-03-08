@@ -1,8 +1,18 @@
-import { IBase } from "./Base";
+/** database return schema */
+export interface IUser {
+  id: string
+  name: string
+  email: string
+  password_hash: string
+  createdAt: Date
+  updatedAt: Date
+}
 
-export interface IUser extends IBase, IUserRequest {}
-
-export interface IUserRequest {
-  email: string | null;
-  name: string | null;
+/** response interface */
+export interface UserResponseDto {
+  id: string
+  name: string
+  email: string
+  createdAt: Date
+  updatedAt: Date
 }

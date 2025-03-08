@@ -1,5 +1,6 @@
 import { Request, Response } from "express"
 import  pool from "../database/database"
+import { DATABASE_PREFIX } from "../constants/config"
 
 export const getAllUsers = async (
   req: Request,
@@ -7,7 +8,7 @@ export const getAllUsers = async (
 ): Promise<void> => {
   try {
     const result = await pool.query(
-      "SELECT * FROM users ORDER BY created_at DESC"
+      `SELECT * FROM ${DATABASE_PREFIX}.users ORDER BY created_at DESC`
     )
     res.json(result.rows)
   } catch (error) {
@@ -21,7 +22,10 @@ export const getUserById = async (
 ): Promise<void> => {
   const { id } = req.params
   try {
-    const result = await pool.query("SELECT * FROM users WHERE id = $1", [id])
+    const result = await pool.query(
+      `SELECT * FROM ${DATABASE_PREFIX}.users WHERE id = $1`,
+      [id]
+    )
     if (result.rows.length === 0) {
       res.status(404).json({ message: "User not found" })
       return
@@ -39,7 +43,7 @@ export const getUserById = async (
 //   const { name, email } = req.body
 //   try {
 //     const result = await pool.query(
-//       "INSERT INTO users (name, email) VALUES ($1, $2) RETURNING *",
+//       `INSERT INTO ${DATABASE_PREFIX}.users (name, email) VALUES ($1, $2) RETURNING *`,
 //       [name, email]
 //     )
 //     res.status(201).json(result.rows[0])
@@ -56,7 +60,7 @@ export const getUserById = async (
 //   const { name, email } = req.body
 //   try {
 //     const result = await pool.query(
-//       "UPDATE users SET name = COALESCE($1, name), email = COALESCE($2, email), updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *",
+//       `UPDATE ${DATABASE_PREFIX}.users SET name = COALESCE($1, name), email = COALESCE($2, email), updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *`,
 //       [name, email, id]
 //     )
 //     if (result.rows.length === 0) {
@@ -76,7 +80,7 @@ export const getUserById = async (
 //   const { id } = req.params
 //   try {
 //     const result = await pool.query(
-//       "DELETE FROM users WHERE id = $1 RETURNING *",
+//       `DELETE FROM ${DATABASE_PREFIX}.users WHERE id = $1 RETURNING *`,
 //       [id]
 //     )
 //     if (result.rows.length === 0) {

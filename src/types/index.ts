@@ -1,2 +1,2 @@
-export { IUser, IUserRequest } from './User'
-export { IPost, IPostRequest } from './Post'
+export * from "./Auth"
+export { IBase } from "./Base"
