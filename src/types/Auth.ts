@@ -3,8 +3,20 @@ import { IMessages } from "./Base"
 
 /**
  * Extended Request interface to include authenticated user information.
+ * 
+ * @template P - Type for route parameters.
+ * @template B - Type for request body.
+ * @template Q - Type for query parameters.
+ * @extends {Request<P, any, B, Q>}
+ * @property {Object} [user] - Authenticated user information.
+ * @property {string} user.id - User's unique identifier.
+ * @property {string} user.email - User's email address.
  */
-export interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest<
+  P = any, // router
+  B = any, // request
+  Q = any // params
+> extends Request<P, any, B, Q> {
   user?: {
     id: string
     email: string
@@ -39,6 +51,7 @@ export type RegisterResponseDto =
         email: string
       }
       token: string
+      success: boolean
     }
   | IMessages
 
@@ -49,10 +62,11 @@ export type LoginResponseDto =
   | {
       user: {
         id: string
-        name: string
+        username: string
         email: string
       }
       token: string
+      success: boolean
     }
   | IMessages
 

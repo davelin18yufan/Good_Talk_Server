@@ -16,6 +16,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@prisma/client": "^6.4.1",
     "arrpag": "^2.1.2",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
@@ -46,6 +47,7 @@
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-prettier": "^5.2.3",
     "jest": "^29.7.0",
+    "prisma": "^6.4.1",
     "supertest": "^7.0.0",
     "ts-jest": "^29.2.5",
     "ts-node-dev": "^2.0.0",
