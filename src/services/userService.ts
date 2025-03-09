@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client"
-import { CreateUserDx, UpdateUserDx } from "../types"
+import { CreateUserDto, UpdateUserDto } from "../types"
 
 const prisma = new PrismaClient()
 
@@ -30,13 +30,13 @@ export const getUserByEmail = async (email: string) => {
   })
 }
 
-export const createUser = async (data: CreateUserDx) => {
+export const createUser = async (data: CreateUserDto) => {
   return await prisma.users.create({
     data,
   })
 }
 
-export const updateUser = async (id: string, data: UpdateUserDx) => {
+export const updateUser = async (id: string, data: UpdateUserDto) => {
   return await prisma.users.update({
     where: { id },
     data,
