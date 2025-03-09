@@ -1,18 +1,15 @@
-/** database return schema */
-export interface IUser {
-  id: string
-  name: string
+export interface CreateUserDto {
+  username: string
   email: string
-  password_hash: string
-  createdAt: Date
-  updatedAt: Date
+  passwordHash: string
+  loginAttempts?: number
+  lastFailedLogin?: Date
 }
 
-/** response interface */
-export interface UserResponseDto {
-  id: string
-  name: string
-  email: string
-  createdAt: Date
-  updatedAt: Date
+export interface UpdateUserDto {
+  username?: string
+  email?: string
+  passwordHash?: string
+  loginAttempts?: number
+  lastFailedLogin?: Date
 }

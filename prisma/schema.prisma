@@ -1,0 +1,310 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model achievements {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid @map("id")
+  title             String              @db.VarChar(100) @map("title")
+  description       String              @map("description")
+  iconUrl           String?             @db.VarChar(255) @map("icon_url")
+  category          String?             @db.VarChar(50) @map("category")
+  points            Int?                @default(0) @map("points")
+  requirements      Json?               @map("requirements")
+  createdAt         DateTime?           @default(now()) @db.Timestamptz(6) @map("created_at")
+  userAchievements  userAchievements[]
+
+  @@map("achievements")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model articleTags {
+  articleId  String    @db.Uuid @map("article_id")
+  tagId      String    @db.Uuid @map("tag_id")
+  createdAt  DateTime? @default(now()) @db.Timestamptz(6) @map("created_at")
+  articles   articles  @relation(fields: [articleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tags       tags      @relation(fields: [tagId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([articleId, tagId])
+  @@map("article_tags")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model articles {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid @map("id")
+  userId         String?       @db.Uuid @map("user_id")
+  title          String        @db.VarChar(255) @map("title")
+  content        String        @map("content")
+  status         String?       @default("DRAFT") @db.VarChar(20) @map("status")
+  viewCount      Int?          @default(0) @map("view_count")
+  createdAt      DateTime?     @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt      DateTime?     @default(now()) @db.Timestamptz(6) @map("updated_at")
+  publishedAt    DateTime?     @db.Timestamptz(6) @map("published_at")
+  coverUrl       String        @default("https://placehold.co/900x600") @db.VarChar(255) @map("cover_url")
+  coverAltText   String        @default("Cover image") @db.VarChar(50) @map("cover_alt_text")
+  articleTags    articleTags[]
+  users          users?        @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("articles")
+}
+
+model holdings {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid @map("id")
+  userId          String?      @db.Uuid @map("user_id")
+  instrumentId    String?      @db.Uuid @map("instrument_id")
+  quantity        Decimal?     @db.Decimal(15, 4) @map("quantity")
+  averageCost     Decimal?     @db.Decimal(15, 4) @map("average_cost")
+  currentValue    Decimal?     @db.Decimal(15, 2) @map("current_value")
+  unrealizedPnl   Decimal?     @db.Decimal(15, 2) @map("unrealized_pnl")
+  updatedAt       DateTime?    @default(now()) @db.Timestamptz(6) @map("updated_at")
+  createdAt       DateTime?    @default(now()) @db.Timestamptz(6) @map("created_at")
+  users           users?       @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([userId, instrumentId])
+  @@map("holdings")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model instruments {
+  id                                                                                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid @map("id")
+  external_id                                                                         String                @db.VarChar(50) @map("external_id")
+  type                                                                                String                @db.VarChar(20) @map("type")
+  symbol                                                                              String                @db.VarChar(20) @map("symbol")
+  market                                                                              String?               @db.VarChar(20) @map("market")
+  currency                                                                            String?               @db.VarChar(10) @map("currency")
+  created_at                                                                          DateTime?             @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  @@map("instruments")
+}
+
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model investmentPlans {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid @map("id")
+  userId          String?        @db.Uuid @map("user_id")
+  comment         String?        @map("comment")
+  targetAmount    Decimal?       @db.Decimal(15, 2) @map("target_amount")
+  startDate       DateTime?      @db.Date @map("start_date")
+  endDate         DateTime?      @db.Date @map("end_date")
+  status          String?        @db.VarChar(20) @map("status")
+  createdAt       DateTime?      @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt       DateTime?      @default(now()) @db.Timestamptz(6) @map("updated_at")
+  targetPrice     Decimal?       @db.Decimal(5, 2) @map("target_price")
+  entryPrice      Decimal?       @db.Decimal(5, 2) @map("entry_price")
+  tradeType       String         @db.VarChar(50) @map("trade_type")
+  operation       String         @db.VarChar(50) @map("operation")
+  instrumentId    String         @db.Uuid @map("instrument_id")
+  stopPrice       Decimal?       @db.Decimal(5, 2) @map("stop_price")
+  users           users?         @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("investment_plans")
+}
+
+model monthlyPerformance {
+  id                          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid @map("id")
+  userId                      String?      @db.Uuid @map("user_id")
+  year                        Int          @map("year")
+  month                       Int          @map("month")
+  startingCapital             Decimal?     @db.Decimal(15, 2) @map("starting_capital")
+  endingCapital               Decimal?     @db.Decimal(15, 2) @map("ending_capital")
+  deposits                    Decimal?     @default(0) @db.Decimal(15, 2) @map("deposits")
+  withdrawals                 Decimal?     @default(0) @db.Decimal(15, 2) @map("withdrawals")
+  realizedProfit              Decimal?     @db.Decimal(15, 2) @map("realized_profit")
+  unrealizedProfit            Decimal?     @db.Decimal(15, 2) @map("unrealized_profit")
+  roiPercentage               Decimal?     @db.Decimal(8, 4) @map("roi_percentage")
+  bestPerformingInstrumentId  String?      @db.Uuid @map("best_performing_instrument_id")
+  worstPerformingInstrumentId String?      @db.Uuid @map("worst_performing_instrument_id")
+  createdAt                   DateTime?    @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt                   DateTime?    @default(now()) @db.Timestamptz(6) @map("updated_at")
+  users                       users?       @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([userId, year, month])
+  @@map("monthly_performance")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model profileVideos {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid @map("id")
+  videoUrl     String    @db.VarChar(255) @map("video_url")
+  title        String    @db.VarChar(100) @map("title")
+  description  String?   @map("description")
+  isActive     Boolean?  @default(true) @map("is_active")
+  createdAt    DateTime? @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  @@map("profile_videos")
+}
+
+model socialLinks {
+  userId       String    @db.Uuid @map("user_id")
+  platform     String    @db.VarChar(20) @map("platform")
+  url          String    @db.VarChar(255) @map("url")
+  isVisible    Boolean?  @default(true) @map("is_visible")
+  createdAt    DateTime? @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt    DateTime? @default(now()) @db.Timestamptz(6) @map("updated_at")
+  users        users     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([userId, platform])
+  @@map("social_links")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tagCategories {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid @map("id")
+  name         String    @unique @db.VarChar(50) @map("name")
+  description  String?   @map("description")
+  iconUrl      String?   @db.VarChar(255) @map("icon_url")
+  createdAt    DateTime? @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt    DateTime? @default(now()) @db.Timestamptz(6) @map("updated_at")
+  tags         tags[]
+
+  @@map("tag_categories")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tags {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid @map("id")
+  categoryId           String?                @db.Uuid @map("category_id")
+  name                 String                 @db.VarChar(50) @map("name")
+  description          String?                @map("description")
+  iconUrl              String?                @db.VarChar(255) @map("icon_url")
+  isSystem             Boolean?               @default(true) @map("is_system")
+  createdBy            String?                @db.Uuid @map("created_by")
+  createdAt            DateTime?              @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt            DateTime?              @default(now()) @db.Timestamptz(6) @map("updated_at")
+  articleTags          articleTags[]
+  tagCategories        tagCategories?         @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                users?                 @relation(fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userTagPreferences   userTagPreferences[]
+
+  @@unique([categoryId, name], map: "tags_categories_id_name_key")
+  @@map("tags")
+}
+
+model transactions {
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid @map("id")
+  userId            String?           @db.Uuid @map("user_id")
+  instrumentId      String?           @db.Uuid @map("instrument_id")
+  transactionType   String            @db.VarChar(20) @map("transaction_type")
+  quantity          Decimal           @db.Decimal(15, 4) @map("quantity")
+  price             Decimal           @db.Decimal(15, 4) @map("price")
+  commission        Decimal?          @db.Decimal(10, 2) @map("commission")
+  transactionDate   DateTime          @db.Timestamptz(6) @map("transaction_date")
+  planId            String?           @db.Uuid @map("plan_id")
+  notes             String?           @map("notes")
+  createdAt         DateTime?         @default(now()) @db.Timestamptz(6) @map("created_at")
+  users             users?            @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("transactions")
+}
+
+model userAchievements {
+  userId        String       @db.Uuid @map("user_id")
+  achievementId String       @db.Uuid @map("achievement_id")
+  achievedAt    DateTime?    @default(now()) @db.Timestamptz(6) @map("achieved_at")
+  achievements  achievements @relation(fields: [achievementId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users         users        @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([userId, achievementId])
+  @@map("user_achievements")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model userFollows {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid @map("id")
+  followerId    String    @db.Uuid @map("follower_id")
+  followingId   String    @db.Uuid @map("following_id")
+  createdAt     DateTime? @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt     DateTime? @default(now()) @db.Timestamptz(6) @map("updated_at")
+  follower      users     @relation("user_follows_follower_idTousers", fields: [followerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  following     users     @relation("user_follows_following_idTousers", fields: [followingId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([followerId, followingId])
+  @@map("user_follows")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model userSettings {
+  userId          String    @id @db.Uuid @map("user_id")
+  initialCapital  Decimal   @db.Decimal(15, 2) @map("initial_capital")
+  currentCapital  Decimal?  @db.Decimal(15, 2) @map("current_capital")
+  leverageRatio   Decimal   @default(1) @db.Decimal(5, 2) @map("leverage_ratio")
+  commissionRate  Decimal?  @db.Decimal(5, 4) @map("commission_rate")
+  dashboardLayout Json?     @map("dashboard_layout")
+  riskTolerance   Decimal   @db.Decimal @map("risk_tolerance")
+  updatedAt       DateTime? @default(now()) @db.Timestamptz(6) @map("updated_at")
+  avatarUrl       String?   @db.VarChar(255) @map("avatar_url")
+  profileVideoId  Int?      @map("profile_video_id")
+  bio             String?   @map("bio")
+  location        String?   @db.VarChar(50) @map("location")
+  aka             String?   @db.VarChar(50) @map("aka")
+  users           users     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("user_settings")
+}
+
+model userTagPreferences {
+  userId           String    @db.Uuid @map("user_id")
+  tagId            String    @db.Uuid @map("tag_id")
+  preferenceLevel  Int?      @default(1) @map("preference_level")
+  createdAt        DateTime? @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt        DateTime? @default(now()) @db.Timestamptz(6) @map("updated_at")
+  tags             tags      @relation(fields: [tagId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users            users     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([userId, tagId])
+  @@map("user_tag_preferences")
+}
+
+model users {
+  id                       String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid @map("id")
+  username                 String                 @unique @db.VarChar(50) @map("username")
+  email                    String                 @unique @db.VarChar(255) @map("email")
+  passwordHash             String                 @db.VarChar(255) @map("password_hash")
+  loginAttempts            Int                    @default(0) @map("login_attempts") 
+  lastFailedLogin          DateTime?              @db.Timestamptz(6) @map("last_failed_login")  
+  createdAt                DateTime?              @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt                DateTime?              @default(now()) @db.Timestamptz(6) @map("updated_at")
+  articles                 articles[]
+  holdings                 holdings[]
+  investmentPlans          investmentPlans[]
+  monthlyPerformance       monthlyPerformance[]
+  socialLinks              socialLinks[]
+  tags                     tags[]
+  transactions             transactions[]
+  userAchievements         userAchievements[]
+  followersRelation        userFollows[]          @relation("user_follows_follower_idTousers")
+  followingRelation        userFollows[]          @relation("user_follows_following_idTousers")
+  userSettings             userSettings?
+  userTagPreferences       userTagPreferences[]
+  yearlyPerformance        yearlyPerformance[]
+
+  @@map("users")
+}
+
+model yearlyPerformance {
+  id                          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid @map("id")
+  userId                      String?      @db.Uuid @map("user_id")
+  year                        Int          @map("year")
+  startingCapital             Decimal?     @db.Decimal(15, 2) @map("starting_capital")
+  endingCapital               Decimal?     @db.Decimal(15, 2) @map("ending_capital")
+  deposits                    Decimal?     @default(0) @db.Decimal(15, 2) @map("deposits")
+  withdrawals                 Decimal?     @default(0) @db.Decimal(15, 2) @map("withdrawals")
+  realizedProfit              Decimal?     @db.Decimal(15, 2) @map("realized_profit")
+  unrealizedProfit            Decimal?     @db.Decimal(15, 2) @map("unrealized_profit")
+  roiPercentage               Decimal?     @db.Decimal(8, 4) @map("roi_percentage")
+  bestPerformingInstrumentId  String?      @db.Uuid @map("best_performing_instrument_id")
+  worstPerformingInstrumentId String?      @db.Uuid @map("worst_performing_instrument_id")
+  bestPerformingMonth         Int?         @map("best_performing_month")
+  worstPerformingMonth        Int?         @map("worst_performing_month")
+  createdAt                   DateTime?    @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt                   DateTime?    @default(now()) @db.Timestamptz(6) @map("updated_at")
+  users                       users?       @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([userId, year])
+  @@map("yearly_performance")
+}
