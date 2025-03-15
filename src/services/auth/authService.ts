@@ -1,18 +1,18 @@
 import { PrismaClient } from "@prisma/client"
-import bcrypt from "bcrypt"
+import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import {
   RegisterRequestDto,
   LoginResponseDto,
   RegisterResponseDto,
   LoginRequestDto,
-} from "../types/"
+} from "@/types"
 import {
   JWT_SECRET,
   MAX_LOGIN_ATTEMPTS,
   LOCKOUT_DURATION,
   SALT,
-} from "../constants/config"
+} from "@/constants/config"
 
 const prisma = new PrismaClient()
 
@@ -29,8 +29,8 @@ export const registerUser = async (
     }
 
     //* 2. encrypt password
-    const hashedPassword = await bcrypt.hash(body.password, SALT)
-
+    const hashedPassword = await bcrypt.hash(body.password, +SALT)
+    
     //* 3. create user
     const user = await prisma.users.create({
       data: {
@@ -93,7 +93,7 @@ export const loginUser = async ({
         )} minutes.`,
       }
     }
-
+    console.log("user", user)
     //* 3. check if password is correct
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash)
 

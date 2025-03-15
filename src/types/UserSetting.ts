@@ -9,7 +9,7 @@ export interface CreateUserSettingsDto {
   dashboardLayout?: Prisma.InputJsonValue
   riskTolerance: Prisma.Decimal
   avatarUrl?: string
-  profileVideoId?: number
+  profileVideoId?: string
   bio?: string
   location?: string
   aka?: string
@@ -24,7 +24,7 @@ export interface UpdateUserSettingsDto {
   dashboardLayout?: Prisma.InputJsonValue
   riskTolerance?: Prisma.Decimal
   avatarUrl?: string
-  profileVideoId?: number
+  profileVideoId?: string
   bio?: string
   location?: string
   aka?: string

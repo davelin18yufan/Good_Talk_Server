@@ -3,8 +3,7 @@ import jwt from "jsonwebtoken"
 import { AuthenticatedRequest } from "../types"
 import { AppError } from "./ErrorInternal"
 import { validate as uuidValidate } from "uuid"
-
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key"
+import { JWT_SECRET } from "../constants/config"
 
 /**
  * Middleware to authenticate a user using a JWT token.

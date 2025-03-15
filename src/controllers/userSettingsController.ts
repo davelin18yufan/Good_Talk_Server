@@ -4,7 +4,7 @@ import {
   CreateUserSettingsDto,
   UpdateUserSettingsDto,
 } from "../types"
-import * as userSettingService from "../services/userSettingsService"
+import * as userSettingService from "@/services/user/settings"
 
 export const getUserSettings = async (
   req: AuthenticatedRequest,

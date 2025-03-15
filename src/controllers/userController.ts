@@ -1,5 +1,5 @@
 import { Request, Response } from "express"
-import * as userService from "../services/userService"
+import * as userService from "../services/user/core"
 import { CreateUserDto, UpdateUserDto } from "../types"
 import { AuthenticatedRequest } from "../types"
 import bcrypt from "bcryptjs"
@@ -24,6 +24,7 @@ export const getUserById = async (
 ) => {
   try {
     const { id } = req.params
+    console.log(id)
     const user = await userService.getUserById(id)
 
     if (!user) {

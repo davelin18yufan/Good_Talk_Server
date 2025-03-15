@@ -4,7 +4,7 @@ import {
   RegisterRequestDto,
   LoginRequestDto,
 } from "../types/Auth"
-import * as authService from "../services/authService"
+import * as authService from "@/services/auth"
 
 export const register = async (
   req: AuthenticatedRequest<unknown, RegisterRequestDto>,

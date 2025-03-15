@@ -1,7 +1,5 @@
-import { PrismaClient } from "@prisma/client"
-import { CreateUserDto, UpdateUserDto } from "../types"
-
-const prisma = new PrismaClient()
+import { CreateUserDto, UpdateUserDto } from "@/types"
+import { prisma } from "@/database"
 
 export const getAllUsers = async () => {
   return await prisma.users.findMany({
@@ -21,12 +19,54 @@ export const getAllUsers = async () => {
 export const getUserById = async (id: string) => {
   return await prisma.users.findUnique({
     where: { id },
+    include: {
+      socialLinks: true,
+      userAchievements: true,
+      userSettings: {
+        include: {
+          profileVideos: true,
+        },
+      },
+      holdings: {
+        include: {
+          users: true,
+          
+        },
+      },
+      userTagPreferences: true,
+      followersRelation: {
+        include: {
+          follower: true,
+        },
+      },
+      followingRelation: {
+        include: {
+          following: true,
+        },
+      },
+      _count: {
+        select: {
+          followersRelation: true, // 粉絲數量
+          followingRelation: true, // 追蹤數量
+        },
+      },
+    },
   })
 }
 
 export const getUserByEmail = async (email: string) => {
   return await prisma.users.findUnique({
     where: { email },
+    include: {
+      socialLinks: true,
+      userAchievements: true,
+      userSettings: {
+        include: {
+          profileVideos: true,
+        },
+      },
+      userTagPreferences: true,
+    },
   })
 }
 

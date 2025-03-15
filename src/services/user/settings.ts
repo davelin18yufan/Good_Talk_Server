@@ -1,7 +1,6 @@
-import { PrismaClient, userSettings } from "@prisma/client"
-import { CreateUserSettingsDto, UpdateUserSettingsDto } from "../types"
-
-const prisma = new PrismaClient()
+import { type userSettings } from "@prisma/client"
+import { CreateUserSettingsDto, UpdateUserSettingsDto } from "@/types"
+import { prisma } from "@/database"
 
 export const getUserSettings = async (
   userId: string
