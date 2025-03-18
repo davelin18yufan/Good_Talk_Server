@@ -285,6 +285,8 @@ model users {
   userSettings       userSettings?
   userTagPreferences userTagPreferences[]
   yearlyPerformance  yearlyPerformance[]
+  resetToken        String?               @map("reset_token")
+  resetTokenExpiry  DateTime?             @map("reset_token_expiry") @db.Timestamptz(6)
 
   @@map("users")
 }

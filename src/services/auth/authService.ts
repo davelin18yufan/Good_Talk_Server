@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client"
+import { prisma } from "@/database"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import {
@@ -6,15 +6,19 @@ import {
   LoginResponseDto,
   RegisterResponseDto,
   LoginRequestDto,
+  ResetPasswordRequestDto,
+  ResetPasswordResponseDto,
+  RequestResetResponseDto,
+  RequestResetDto,
 } from "@/types"
 import {
   JWT_SECRET,
   MAX_LOGIN_ATTEMPTS,
   LOCKOUT_DURATION,
   SALT,
+  RESET_TOKEN_EXPIRY,
 } from "@/constants/config"
-
-const prisma = new PrismaClient()
+import crypto from "crypto"
 
 export const registerUser = async (
   body: RegisterRequestDto
@@ -30,7 +34,7 @@ export const registerUser = async (
 
     //* 2. encrypt password
     const hashedPassword = await bcrypt.hash(body.password, +SALT)
-    
+
     //* 3. create user
     const user = await prisma.users.create({
       data: {
@@ -93,7 +97,7 @@ export const loginUser = async ({
         )} minutes.`,
       }
     }
-    console.log("user", user)
+
     //* 3. check if password is correct
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash)
 
@@ -142,6 +146,124 @@ export const loginUser = async ({
       throw new Error("Error during login: " + error.message)
     } else {
       throw new Error("Error during login")
+    }
+  }
+}
+
+/**
+ * Request password reset - creates and stores a reset token
+ */
+export const requestPasswordReset = async ({
+  email,
+}: RequestResetDto): Promise<RequestResetResponseDto> => {
+  try {
+    // Check if user exists
+    const user = await prisma.users.findUnique({
+      where: { email },
+    })
+
+    if (!user) {
+      //! For security, still return success even if user doesn't exist
+      //! This prevents user enumeration attacks
+      return {
+        success: true,
+        message:
+          "If your email exists in our system, you will receive a password reset link.",
+      }
+    }
+
+    // Generate a secure random token
+    const resetToken = crypto.randomBytes(32).toString("hex")
+
+    // Hash the token for storage (so it's not stored in plain text)
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex")
+
+    // Set expiry time
+    const tokenExpiry = new Date(Date.now() + RESET_TOKEN_EXPIRY)
+
+    // Store the token in the database
+    await prisma.users.update({
+      where: { id: user.id },
+      data: {
+        resetToken: hashedToken,
+        resetTokenExpiry: tokenExpiry,
+      },
+    })
+
+    return {
+      success: true,
+      message:
+        "If your email exists in our system, you will receive a password reset link.",
+      // TODO: The actual token would be sent via email, but I return it here for testing
+      resetToken: resetToken,
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error("Error requesting password reset: " + error.message)
+    } else {
+      throw new Error("Error requesting password reset")
+    }
+  }
+}
+
+/**
+ * Reset password using a valid token
+ */
+export const resetPassword = async ({
+  token,
+  newPassword,
+}: Omit<
+  ResetPasswordRequestDto,
+  "confirmPassword"
+>): Promise<ResetPasswordResponseDto> => {
+  try {
+    // Hash the provided token to compare with stored hash
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex")
+
+    //* Find user with this reset token that hasn't expired
+    const user = await prisma.users.findFirst({
+      where: {
+        resetToken: hashedToken,
+        resetTokenExpiry: {
+          gt: new Date(), // greater than
+        },
+      },
+    })
+
+    if (!user) {
+      return {
+        success: false,
+        message: "Invalid or expired password reset token",
+      }
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, +SALT)
+
+    // Update user password and clear reset token fields
+    await prisma.users.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: hashedPassword,
+        resetToken: null,
+        resetTokenExpiry: null,
+        loginAttempts: 0, // Also reset login attempts on password reset
+        lastFailedLogin: null,
+      },
+    })
+
+    return {
+      success: true,
+      message: "Password has been reset successfully",
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error("Error resetting password: " + error.message)
+    } else {
+      throw new Error("Error resetting password")
     }
   }
 }

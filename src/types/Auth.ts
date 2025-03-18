@@ -3,7 +3,7 @@ import { IMessages } from "./Base"
 
 /**
  * Extended Request interface to include authenticated user information.
- * 
+ *
  * @template P - Type for route parameters.
  * @template B - Type for request body.
  * @template Q - Type for query parameters.
@@ -86,3 +86,36 @@ export type RefreshTokenResponseDto =
       token: string
     }
   | IMessages
+
+/**
+ * `Request` reset password.
+ */
+export interface RequestResetDto {
+  email: string
+}
+
+/**
+ * `Request` reset password response.
+ */
+export interface RequestResetResponseDto {
+  success: boolean
+  message: string
+  resetToken?: string // Would normally not be returned, just sent via email
+}
+
+/**
+ * Reset password request.
+ */
+export interface ResetPasswordRequestDto {
+  token: string
+  newPassword: string
+  confirmPassword: string
+}
+
+/**
+ * Reset password response
+ */
+export interface ResetPasswordResponseDto {
+  success: boolean
+  message: string
+}
