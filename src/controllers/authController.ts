@@ -8,6 +8,7 @@ import {
 } from "../types/Auth"
 import * as authService from "@/services/auth"
 import { getUserByEmail } from "@/services/user"
+import { sendErrorResponse } from "@/helpers"
 
 export const register = async (
   req: AuthenticatedRequest<unknown, RegisterRequestDto>,
@@ -62,9 +63,7 @@ export const login = async (
 
     res.status(200).json(result) // return success data
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Error during login", error })
+    sendErrorResponse(res, 500, "Error during login", error)
   }
 }
 
@@ -100,10 +99,7 @@ export const requestReset = async (
     //? But don't include the actual token in the API response
   } catch (error) {
     console.error("Password reset request error:", error)
-    res.status(500).json({
-      success: false,
-      message: "An error occurred while processing your request",
-    })
+    sendErrorResponse(res, 500, "Error during registration", error)
   }
 }
 
@@ -141,9 +137,10 @@ export const resetPassword = async (
     }
   } catch (error) {
     console.error("Password reset error:", error)
-    res.status(500).json({
-      success: false,
-      message: "An error occurred while resetting your password",
-    })
+    sendErrorResponse(
+      res,
+      500,
+      "An error occurred while resetting your password", error
+    )
   }
 }

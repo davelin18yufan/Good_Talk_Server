@@ -5,6 +5,7 @@ import {
   UpdateUserSettingsDto,
 } from "../types"
 import * as userSettingService from "@/services/user/settings"
+import { sendErrorResponse } from "@/helpers"
 
 export const getUserSettings = async (
   req: AuthenticatedRequest,
@@ -22,7 +23,7 @@ export const getUserSettings = async (
 
     res.status(200).json(userSettings)
   } catch (error) {
-    throw error
+    sendErrorResponse(res, 500, "Error get user settings", error)
   }
 }
 
@@ -60,10 +61,10 @@ export const createUserSettings = async (
       location,
       aka,
     })
-    
+
     res.status(201).json(userSettings)
   } catch (error) {
-    throw error
+    sendErrorResponse(res, 500, "Error creating user setting", error)
   }
 }
 
@@ -82,6 +83,6 @@ export const updateUserSettings = async (
 
     res.status(201).json(userSettings)
   } catch (error) {
-    throw error
+    sendErrorResponse(res, 500, "Error updating user setting", error)
   }
 }

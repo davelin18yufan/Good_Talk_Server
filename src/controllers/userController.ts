@@ -4,6 +4,7 @@ import { CreateUserDto, UpdateUserDto } from "../types"
 import { AuthenticatedRequest } from "../types"
 import bcrypt from "bcryptjs"
 import { SALT } from "../constants/config"
+import { sendErrorResponse } from "@/helpers"
 
 export const getAllUsers = async (
   req: AuthenticatedRequest,
@@ -14,7 +15,7 @@ export const getAllUsers = async (
 
     res.json(users)
   } catch (error) {
-    res.status(500).json({ message: "Error fetching users", error })
+    sendErrorResponse(res, 500, "Error fetching users", error)
   }
 }
 
@@ -34,7 +35,7 @@ export const getUserById = async (
 
     res.json(user)
   } catch (error) {
-    res.status(500).json({ message: "Error fetching user", error })
+    sendErrorResponse(res, 500, "Error fetching user", error)
   }
 }
 
@@ -48,7 +49,7 @@ export const createUser = async (
 
     res.status(201).json(newUser)
   } catch (error) {
-    res.status(500).json({ message: "Error creating user", error })
+    sendErrorResponse(res, 500, "Error creating user", error)
   }
 }
 
@@ -64,7 +65,7 @@ export const updateUser = async (
 
     res.json(updatedUser)
   } catch (error) {
-    res.status(500).json({ message: "Error updating user", error })
+    sendErrorResponse(res, 500, "Error updating user", error)
   }
 }
 
@@ -77,7 +78,7 @@ export const deleteUser = async (
     await userService.deleteUser(id)
     res.json({ message: "User deleted successfully" })
   } catch (error) {
-    res.status(500).json({ message: "Error deleting user", error })
+    sendErrorResponse(res, 500, "Error deleting user", error)
   }
 }
 
@@ -97,6 +98,6 @@ export const changePassword = async (
 
     res.status(204).json({ message: "Password changed successfully" })
   } catch (error) {
-    res.status(500).json({ message: "Error changing password", error })
+    sendErrorResponse(res, 500, "Error changing password", error)
   }
 }
