@@ -17,8 +17,10 @@ import {
   LOCKOUT_DURATION,
   SALT,
   RESET_TOKEN_EXPIRY,
+  FRONTEND_URL,
 } from "@/constants/config"
-import crypto from "crypto"
+import { sendResetEmail } from "../mail/emailService"
+import crypto from "node:crypto"
 
 export const registerUser = async (
   body: RegisterRequestDto
@@ -172,10 +174,11 @@ export const requestPasswordReset = async ({
       }
     }
 
-    // Generate a secure random token
+    // Generate a secure random token (synchronous version)
     const resetToken = crypto.randomBytes(32).toString("hex")
 
-    // Hash the token for storage (so it's not stored in plain text)
+    // Hash the token for storage using SHA-256
+    // This follows the pattern in the original code but uses the API correctly
     const hashedToken = crypto
       .createHash("sha256")
       .update(resetToken)
@@ -193,12 +196,14 @@ export const requestPasswordReset = async ({
       },
     })
 
+    // send email
+    const resetLink = `${FRONTEND_URL}/reset-password?token=${resetToken}`
+    await sendResetEmail(user.email, resetLink)
+
     return {
       success: true,
       message:
         "If your email exists in our system, you will receive a password reset link.",
-      // TODO: The actual token would be sent via email, but I return it here for testing
-      resetToken: resetToken,
     }
   } catch (error) {
     if (error instanceof Error) {
