@@ -1,146 +1,146 @@
-import { Request, Response } from "express"
-import bcrypt from "bcryptjs"
-import jwt, { JwtPayload } from "jsonwebtoken"
-import pool from "../database/database.js"
-import { RegisterRequestDto, LoginRequestDto, RegisterResponseDto, LoginResponseDto, JwtPayloadDto } from "../types"
-import { DATABASE_PREFIX } from "../constants/config.js"
-import { IUser } from "../types/User.js"
-
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key"
+import { Response } from "express"
+import {
+  AuthenticatedRequest,
+  RegisterRequestDto,
+  LoginRequestDto,
+  ResetPasswordRequestDto,
+  RequestResetDto,
+} from "../types/Auth"
+import * as authService from "@/services/auth"
+import { getUserByEmail } from "@/services/user"
+import { sendErrorResponse } from "@/helpers"
 
 export const register = async (
-  req: Request<object, object, RegisterRequestDto>,
-  res: Response<RegisterResponseDto>
-): Promise<void> => {
-  const { username, email, password } = req.body
-
+  req: AuthenticatedRequest<unknown, RegisterRequestDto>,
+  res: Response
+) => {
   try {
-    // Check if user already exists
-    const existingUser = await pool.query(
-      `SELECT * FROM ${DATABASE_PREFIX}.users WHERE email = $1`,
-      [email]
-    )
+    const { username, email, password } = req.body
 
-    if (existingUser.rows.length > 0) {
-      res.status(400).json({ message: "User already exists" }) 
+    // Searching for the user in the database
+    const existedUser = await getUserByEmail(email)
+    if (existedUser) {
+      res.status(400).json({
+        success: false,
+        message: "User already exists",
+      })
       return
     }
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10)
-    const hashedPassword = await bcrypt.hash(password, salt)
-
-    // Create user
-    const result = await pool.query(
-      `INSERT INTO ${DATABASE_PREFIX}.users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, username, email`,
-      [username, email, hashedPassword]
-    )
-
-    // Generate JWT
-    const token = jwt.sign(
-      { id: result.rows[0].id, email: result.rows[0].email },
-      JWT_SECRET,
-      { expiresIn: "12h" }
-    )
-
-    res.status(201).json({
-      user: result.rows[0],
-      token,
+    const result = await authService.registerUser({
+      username,
+      email,
+      password,
     })
+
+    if (!result.success) {
+      res.status(400).json(result) // return IMessages
+      return
+    }
+
+    res.status(201).json(result) // return success data
   } catch (error) {
-    throw error
+    res.status(500).json({
+      success: false,
+      message: "Error during registration",
+      error: (error as Error).message,
+    })
   }
 }
 
 export const login = async (
-  req: Request<object, object, LoginRequestDto>,
-  res: Response<LoginResponseDto>
-): Promise<void> => {
-  const { email, password } = req.body
-
+  req: AuthenticatedRequest<unknown, LoginRequestDto>,
+  res: Response
+) => {
   try {
-    // Find user
-    const result = await pool.query(
-      `SELECT * FROM ${DATABASE_PREFIX}.users WHERE email = $1`,
-      [email]
-    )
-    
-    if (result.rows.length === 0) {
-      res.status(401).json({ message: "Invalid credentials" })
+    const { email, password } = req.body
+    const result = await authService.loginUser({ email, password })
+
+    if (!result.success) {
+      res.status(401).json(result) // return IMessages
       return
     }
 
-    const user: IUser = result.rows[0]
-
-    // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password_hash)
-    if (!isValidPassword) {
-      res.status(401).json({ message: "Invalid credentials" })
-      return
-    }
-
-    // Generate JWT
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, {
-      expiresIn: "12h",
-    })
-
-    res.json({
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-      },
-      token,
-    })
+    res.status(200).json(result) // return success data
   } catch (error) {
-    throw error
+    sendErrorResponse(res, 500, "Error during login", error)
   }
 }
 
-export const refreshToken = async (
-  req: Request<object, object, JwtPayloadDto>,
-  res: Response<LoginResponseDto>
+/**
+ * Request a password reset - generates token and sends email
+ */
+export const requestReset = async (
+  req: AuthenticatedRequest<unknown, RequestResetDto>,
+  res: Response
 ): Promise<void> => {
-  const token = req.headers.authorization?.split(" ")[1]
-
-  if (!token) {
-    res.status(401).json({ message: "No token provided" })
-    return
-  }
-
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as string | JwtPayload
-    if (typeof decoded === "string") {
-      res.status(401).json({ message: "Invalid token" })
-      return
-    }
-    const user = await pool.query(
-      `SELECT * FROM ${DATABASE_PREFIX}.users WHERE id = $1`,
-      [decoded.id]
-    )
+    const { email } = req.body
 
-    if (user.rows.length === 0) {
-      res.status(401).json({ message: "User not found" })
+    if (!email) {
+      res.status(400).json({
+        success: false,
+        message: "Email is required",
+      })
       return
     }
 
-    const newToken = jwt.sign(
-      { id: user.rows[0].id, email: user.rows[0].email },
-      JWT_SECRET,
-      {
-        expiresIn: "12h",
-      }
-    )
+    await authService.requestPasswordReset({ email })
 
-    res.json({
-      user: {
-        id: user.rows[0].id,
-        name: user.rows[0].name,
-        email: user.rows[0].email,
-      },
-      token: newToken,
+    // Always return 200 even if user doesn't exist (security best practice)
+    res.status(200).json({
+      success: true,
+      message:
+        "If your email exists in our system, you will receive a password reset link",
     })
+
+    //? In production, send an email with the reset link here
+    //? The reset link would contain the token returned from requestPasswordReset
+    //? But don't include the actual token in the API response
   } catch (error) {
-    res.status(401).json({ message: "Invalid token" })
+    console.error("Password reset request error:", error)
+    sendErrorResponse(res, 500, "Error during registration", error)
+  }
+}
+
+/**
+ * Reset password using valid token
+ */
+export const resetPassword = async (
+  req: AuthenticatedRequest<unknown, ResetPasswordRequestDto>,
+  res: Response
+): Promise<void> => {
+  try {
+    const { token, newPassword, confirmPassword } = req.body
+
+    if(newPassword !== confirmPassword){
+      res.status(400).json({
+        success: false,
+        message: "Two password are not matched."
+      })
+    }
+
+    if (!token || !newPassword) {
+      res.status(400).json({
+        success: false,
+        message: "Token and new password are required.",
+      })
+      return
+    }
+
+    const result = await authService.resetPassword({ token, newPassword })
+
+    if (result.success) {
+      res.status(200).json(result)
+    } else {
+      res.status(400).json(result)
+    }
+  } catch (error) {
+    console.error("Password reset error:", error)
+    sendErrorResponse(
+      res,
+      500,
+      "An error occurred while resetting your password", error
+    )
   }
 }

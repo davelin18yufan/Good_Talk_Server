@@ -2,7 +2,7 @@ import express from "express"
 import morgan from "morgan"
 import cors from "cors"
 
-import { router } from "@/src/routes"
+import { router } from "@/routes"
 import { AppError, ErrorInternal } from "./middlewares/ErrorInternal"
 
 const app = express()

@@ -1,9 +1,10 @@
 import pg from "pg"
 import dotenv from "dotenv"
-
+import { PrismaClient } from "@prisma/client"
 dotenv.config()
 
 const { Pool } = pg
+export const prisma = new PrismaClient()
 
 const pool = new Pool({
   user: process.env.POSTGRES_USER || "postgres",
