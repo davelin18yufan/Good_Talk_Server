@@ -26,7 +26,8 @@ export const getArticles = async (
 
     res.status(200).json(articles)
   } catch (error) {
-    res.status(500).json({ message: "Error fetching articles", error })
+    sendErrorResponse(res, 500, "Error fetching articles", error)
+
   }
 }
 
@@ -88,7 +89,7 @@ export const deleteArticle = async (
 ) => {
   try {
     const { id } = req.params
-    
+
     await articleServices.deleteArticle(id)
     res.status(200).json({ message: "Article deleted successfully" })
   } catch (error) {
