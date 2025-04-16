@@ -8,6 +8,8 @@ import {
   createArticle,
   updateArticle,
   deleteArticle,
+  getPopularArticles,
+  getUserArticles,
 } from "../controllers/articleController"
 
 const router = Router()
@@ -56,6 +58,8 @@ router.use(auth)
 
 router.get("/", asyncHandler(getArticles))
 router.get("/:id", validateUUID, asyncHandler(getArticleById))
+router.get("/popular", asyncHandler(getPopularArticles))
+router.get("/user-article", asyncHandler(getUserArticles))
 router.post("/", validateArticle, asyncHandler(createArticle))
 router.put(
   "/:id",

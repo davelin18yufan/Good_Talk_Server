@@ -9,7 +9,7 @@ import {
 const prisma = new PrismaClient()
 
 export const getTags = async (
-  params: GetTagsDto = {}, // default nothing to search all
+  params: GetTagsDto = {}, // default to search all
   options: GetTagOptions = {} 
 ): Promise<tags[]> => {
   const { name, categoryName, limit = 10, offset = 0 } = params

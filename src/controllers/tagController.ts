@@ -1,4 +1,3 @@
-// controllers/tagController.ts
 import { Response } from "express"
 import { AuthenticatedRequest } from "@/types/Auth"
 import * as tagServices from "../services/tag"

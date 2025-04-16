@@ -8,9 +8,22 @@ import {
 const prisma = new PrismaClient()
 
 export const getArticles = async (
-  params: GetArticlesDto = {} // default nothing to search all
+  params: GetArticlesDto = {} // default to search all
 ): Promise<articles[]> => {
-  const { query, tagName, authorUsername, limit = 10, offset = 0 } = params
+  const {
+    query,
+    tagName,
+    authorUsername,
+    limit = 10,
+    offset = 0,
+    startDate,
+    endDate,
+    minViews,
+    maxViews,
+    status,
+  } = params
+  // all params are optional
+  // if no params, return all articles
   return prisma.articles.findMany({
     where: {
       AND: [
@@ -38,6 +51,23 @@ export const getArticles = async (
               },
             }
           : {},
+        startDate || endDate
+          ? {
+              publishedAt: {
+                gte: startDate ? new Date(startDate) : undefined,
+                lte: endDate ? new Date(endDate) : undefined,
+              },
+            }
+          : {},
+        minViews || maxViews
+          ? {
+              viewCount: {
+                gte: minViews,
+                lte: maxViews,
+              },
+            }
+          : {},
+        status ? { status: { equals: status } } : {},
       ],
     },
     include: {
@@ -62,6 +92,75 @@ export const getArticles = async (
   })
 }
 
+export const getUserArticles = async (
+  userId: string,
+  params: GetArticlesDto = {}
+): Promise<articles[]> => {
+  const {
+    tagName,
+    limit = 10,
+    offset = 0,
+    startDate,
+    endDate,
+    minViews,
+    maxViews,
+    status,
+  } = params
+  return prisma.articles.findMany({
+    where: {
+      AND: [
+        { userId },
+        tagName
+          ? {
+              articleTags: {
+                some: {
+                  tags: { name: { equals: tagName, mode: "insensitive" } },
+                },
+              },
+            }
+          : {},
+        startDate || endDate
+          ? {
+              publishedAt: {
+                gte: startDate ? new Date(startDate) : undefined,
+                lte: endDate ? new Date(endDate) : undefined,
+              },
+            }
+          : {},
+        minViews || maxViews
+          ? {
+              viewCount: {
+                gte: minViews,
+                lte: maxViews,
+              },
+            }
+          : {},
+        status ? { status: { equals: status } } : {},
+      ],
+    },
+    include: {
+      users: {
+        select: {
+          username: true,
+          email: true,
+        },
+        include: { userSettings: { select: { aka: true } } },
+      },
+      articleTags: {
+        include: {
+          tags: {
+            include: { tagCategories: true },
+          },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+    skip: offset,
+  })
+}
+
+
 export const getArticleById = async (id: string): Promise<articles | null> => {
   return prisma.articles.findUnique({
     where: { id },
@@ -81,6 +180,47 @@ export const getArticleById = async (id: string): Promise<articles | null> => {
         },
       },
     },
+  })
+}
+
+export const getPopularArticles = async (
+  params: GetArticlesDto = {}
+): Promise<articles[]> => {
+  const { tagName, limit = 10, offset = 0 } = params
+  return prisma.articles.findMany({
+    where: {
+      AND: [
+        { status: "PUBLISHED" }, // Only published articles
+        tagName
+          ? {
+              articleTags: {
+                some: {
+                  tags: { name: { equals: tagName, mode: "insensitive" } },
+                },
+              },
+            }
+          : {},
+      ],
+    },
+    include: {
+      users: {
+        select: {
+          username: true,
+          email: true,
+        },
+        include: { userSettings: { select: { aka: true } } },
+      },
+      articleTags: {
+        include: {
+          tags: {
+            include: { tagCategories: true },
+          },
+        },
+      },
+    },
+    orderBy: { viewCount: "desc" }, // Sort by view count
+    take: limit,
+    skip: offset,
   })
 }
 

@@ -13,13 +13,29 @@ export const getArticles = async (
   res: Response
 ) => {
   try {
-    const { query, tagName, authorUsername, limit, offset } = req.query
+    const {
+      query,
+      tagName,
+      authorUsername,
+      limit,
+      offset,
+      startDate,
+      endDate,
+      minViews,
+      maxViews,
+      status,
+    } = req.query
     const params: GetArticlesDto = {
       query: query as string,
       tagName: tagName as string,
       authorUsername: authorUsername as string,
-      limit: limit ? parseInt(limit as unknown as string) : undefined,
-      offset: offset ? parseInt(offset as unknown as string) : undefined,
+      limit: limit ? parseInt(limit as unknown as string) : 10,
+      offset: offset ? parseInt(offset as unknown as string) : 0,
+      startDate: startDate as string,
+      endDate: endDate as string,
+      minViews: minViews ? parseInt(minViews as unknown as string) : undefined,
+      maxViews: maxViews ? parseInt(maxViews as unknown as string) : undefined,
+      status,
     }
 
     const articles = await articleServices.getArticles(params)
@@ -27,7 +43,78 @@ export const getArticles = async (
     res.status(200).json(articles)
   } catch (error) {
     sendErrorResponse(res, 500, "Error fetching articles", error)
+  }
+}
 
+export const getPopularArticles = async (
+  req: AuthenticatedRequest<unknown, unknown, GetArticlesDto>,
+  res: Response
+) => {
+  try {
+    const {
+      tagName,
+      limit,
+      offset,
+      startDate,
+      endDate,
+      minViews,
+      maxViews,
+    } = req.query
+    const params: GetArticlesDto = {
+      tagName: tagName as string,
+      limit: limit ? parseInt(limit as unknown as string) : 10,
+      offset: offset ? parseInt(offset as unknown as string) : 0,
+      startDate: startDate as string,
+      endDate: endDate as string,
+      minViews: minViews ? parseInt(minViews as unknown as string) : undefined,
+      maxViews: maxViews ? parseInt(maxViews as unknown as string) : undefined,
+    }
+
+    const articles = await articleServices.getPopularArticles(params)
+
+    res.status(200).json(articles)
+  } catch (error) {
+    sendErrorResponse(res, 500, "Error fetching popular articles", error)
+  }
+}
+
+export const getUserArticles = async (
+  req: AuthenticatedRequest<unknown, unknown, GetArticlesDto>,
+  res: Response
+) => {
+  try {
+    const {
+      tagName,
+      limit,
+      offset,
+      startDate,
+      endDate,
+      minViews,
+      maxViews,
+      status,
+    } = req.query
+    const userId = req.user?.id
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" })
+      return
+    }
+
+    const params: GetArticlesDto = {
+      tagName: tagName as string,
+      limit: limit ? parseInt(limit as unknown as string) : 10,
+      offset: offset ? parseInt(offset as unknown as string) : 0,
+      startDate: startDate as string,
+      endDate: endDate as string,
+      minViews: minViews ? parseInt(minViews as unknown as string) : undefined,
+      maxViews: maxViews ? parseInt(maxViews as unknown as string) : undefined,
+      status,
+    }
+
+    const articles = await articleServices.getUserArticles(userId, params)
+
+    res.status(200).json(articles)
+  } catch (error) {
+    sendErrorResponse(res, 500, "Error fetching user articles", error)
   }
 }
 
