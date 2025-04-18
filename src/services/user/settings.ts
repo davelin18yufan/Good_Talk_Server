@@ -1,5 +1,5 @@
 import { type userSettings } from "@prisma/client"
-import { CreateUserSettingsDto, UpdateUserSettingsDto } from "@/types"
+import { type CreateUserSettingsDto, type UpdateUserSettingsDto } from "@/types"
 import { prisma } from "@/database"
 
 export const getUserSettings = async (
