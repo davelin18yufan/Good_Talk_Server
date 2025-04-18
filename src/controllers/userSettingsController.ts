@@ -2,6 +2,7 @@ import { Request, Response } from "express"
 import {
   AuthenticatedRequest,
   CreateUserSettingsDto,
+  UpdateDashboardLayoutDto,
   UpdateUserSettingsDto,
 } from "../types"
 import * as userSettingService from "@/services/user/settings"
@@ -84,5 +85,23 @@ export const updateUserSettings = async (
     res.status(201).json(userSettings)
   } catch (error) {
     sendErrorResponse(res, 500, "Error updating user setting", error)
+  }
+}
+
+export const updateDashboardLayout = async (
+  req: AuthenticatedRequest<unknown, UpdateDashboardLayoutDto>,
+  res: Response
+): Promise<void> => {
+  const userId = req.user?.id
+  const { dashboardLayout, toolbox } = req.body
+
+  try {
+    const userSettings = await userSettingService.updateUserSettings(userId!, {
+      dashboardLayout: { dashboardLayout, toolbox },
+    })
+
+    res.status(200).json(userSettings)
+  } catch (error) {
+    sendErrorResponse(res, 500, "Error updating dashboard layout", error)
   }
 }

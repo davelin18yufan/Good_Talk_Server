@@ -14,7 +14,12 @@ export const createUserSettings = async (
   data: CreateUserSettingsDto & { userId: string }
 ): Promise<userSettings> => {
   return prisma.userSettings.create({
-    data,
+    data: {
+      ...data,
+      dashboardLayout: data.dashboardLayout
+        ? JSON.stringify(data.dashboardLayout)
+        : undefined,
+    },
   })
 }
 
@@ -24,6 +29,11 @@ export const updateUserSettings = async (
 ): Promise<userSettings> => {
   return prisma.userSettings.update({
     where: { userId },
-    data,
+    data: {
+      ...Object.fromEntries(
+        Object.entries(data).filter(([_, value]) => value !== undefined)
+      ),
+      updatedAt: new Date(),
+    },
   })
 }
