@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "transactions" ADD COLUMN     "updated_at" TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP;
