@@ -1,6 +1,7 @@
 import { type userSettings } from "@prisma/client"
 import { type CreateUserSettingsDto, type UpdateUserSettingsDto } from "@/types"
 import { prisma } from "@/database"
+import { DEFAULT_LAYOUTS, DEFAULT_TOOLBOX } from "@/constants/charts"
 
 export const getUserSettings = async (
   userId: string
@@ -19,10 +20,10 @@ export const createUserSettings = async (
       //* Explicitly handle dashboardLayout to ensure JSON compatibility
       // JSON.stringify converts the dashboardLayout object to a string, as Prisma's Json field
       // expects a JSON-serializable value. This avoids type mismatches with InputJsonValue.
-      // If dashboardLayout is undefined, pass undefined to respect the nullable Json? field.
-      dashboardLayout: data.dashboardLayout
-        ? JSON.stringify(data.dashboardLayout)
-        : undefined,
+      dashboardLayout: JSON.stringify({
+        dashboardLayout: DEFAULT_LAYOUTS,
+        toolbox: DEFAULT_TOOLBOX,
+      }),
     },
   })
 }
@@ -34,7 +35,7 @@ export const updateUserSettings = async (
   return prisma.userSettings.update({
     where: { userId },
     data: {
-      //* Filter out undefined values to prevent setting non-nullable fields to undefined, which would cause Prisma errors. 
+      //* Filter out undefined values to prevent setting non-nullable fields to undefined, which would cause Prisma errors.
       // Object.entries converts the input data to key-value pairs, filter removes pairs with undefined values, and Object.fromEntries
       // reconstructs the object with only defined values.
       ...Object.fromEntries(

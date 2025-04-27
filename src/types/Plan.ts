@@ -13,3 +13,10 @@ export interface CreateInvestmentPlanDto {
 }
 
 export type UpdateInvestmentPlanDto = Partial<CreateInvestmentPlanDto>
+
+export interface GetInvestmentPlansDto {
+  userId: string
+  limit?: number
+  offset?: number
+}
+

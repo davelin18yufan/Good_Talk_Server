@@ -59,6 +59,6 @@ router.put(
   asyncHandler(updateTransaction)
 )
 router.delete("/:id", validateUUID, asyncHandler(deleteTransaction))
-router.post("/upload", upload.single("file"), asyncHandler(uploadTransactions))
+router.post("/uploadLog", upload.single("file"), asyncHandler(uploadTransactions))
 
 export default router

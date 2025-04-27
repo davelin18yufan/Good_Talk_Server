@@ -1,17 +1,12 @@
 import { PrismaClient, transactions } from "@prisma/client"
 import { recalculatePerformance } from "./performance"
 import {
-  CreateTransactionDto,
-  UpdateTransactionDto,
+  type CreateTransactionDto,
+  type UpdateTransactionDto,
+  type GetTransactionsDto,
 } from "@/types/Transaction"
 
 const prisma = new PrismaClient()
-
-export interface GetTransactionsDto {
-  userId: string
-  limit?: number
-  offset?: number
-}
 
 export const getTransactions = async (
   params: GetTransactionsDto
@@ -19,13 +14,17 @@ export const getTransactions = async (
   const { userId, limit, offset } = params
   return prisma.transactions.findMany({
     where: { userId },
-    include: { instruments: { select: { symbol: true, name: true } } },
+    include: {
+      instruments: { select: { symbol: true, name: true } },
+      investmentPlans: {
+        select: { id: true, tradeType: true, operation: true },
+      },
+    },
     orderBy: { transactionDate: "desc" },
     take: limit,
     skip: offset,
   })
 }
-
 export const getTransactionById = async (
   id: string,
   userId: string

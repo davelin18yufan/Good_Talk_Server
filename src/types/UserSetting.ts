@@ -1,3 +1,4 @@
+import { BREAKPOINTS } from "@/constants/charts"
 import { Prisma } from "@prisma/client"
 
 // user create DTO
@@ -39,6 +40,6 @@ export interface GridItem {
   chartId: string // 圖表 ID
 }
 
-export type Breakpoint = 'lg' | 'md' | 'sm' | 'xs' | 'xxs';
+export type Breakpoint = (typeof BREAKPOINTS)[number]
 
-export type ResponsiveLayouts = Map<Breakpoint, GridItem[]>;
+export type ResponsiveLayouts = Record<Breakpoint, GridItem[]>

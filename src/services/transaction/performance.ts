@@ -1,160 +1,72 @@
+import { PrismaClient } from "@prisma/client"
 import {
-  PrismaClient,
-  monthlyPerformance,
-  yearlyPerformance,
-  holdings,
-} from "@prisma/client"
+  CHART_HANDLERS,
+  DEFAULT_LAYOUTS,
+  DEFAULT_TOOLBOX,
+} from "@/constants/charts"
+import { ResponsiveLayouts, GridItem } from "@/types"
+import { ChartData } from "@/types/Transaction"
 
 const prisma = new PrismaClient()
 
-export const recalculatePerformance = async (userId: string): Promise<void> => {
-  const transactions = await prisma.transactions.findMany({
+export async function recalculatePerformance(
+  userId: string
+): Promise<ChartData> {
+  // Fetch user settings
+  const userSettings = await prisma.userSettings.findUnique({
     where: { userId },
-    include: { instruments: true },
-    orderBy: { transactionDate: "asc" },
   })
 
-  const holdingsMap: {
-    [instrumentId: string]: { quantity: number; averageCost: number }
-  } = {}
-  let totalRealizedProfit = 0
-  let totalUnrealizedProfit = 0
+  // Parse dashboardLayout and toolbox
+  let chartIds: string[] = []
+  let dashboardLayout: ResponsiveLayouts = DEFAULT_LAYOUTS
+  let toolbox: ResponsiveLayouts = DEFAULT_TOOLBOX
 
-  for (const tx of transactions) {
-    const instrumentId = tx.instrumentId!
-    const quantity = tx.quantity.toNumber()
-    const price = tx.price.toNumber()
-    const commission = tx.commission?.toNumber() || 0
-
-    if (!holdingsMap[instrumentId]) {
-      holdingsMap[instrumentId] = { quantity: 0, averageCost: 0 }
-    }
-
-    if (tx.transactionType.includes("BUY")) {
-      const current = holdingsMap[instrumentId]
-      const newQuantity = current.quantity + quantity
-      const newCost =
-        (current.quantity * current.averageCost +
-          quantity * price +
-          commission) /
-        newQuantity
-      holdingsMap[instrumentId] = {
-        quantity: newQuantity,
-        averageCost: newCost,
-      }
-    } else if (tx.transactionType.includes("SELL")) {
-      const current = holdingsMap[instrumentId]
-      const profit = (price - current.averageCost) * quantity - commission
-      totalRealizedProfit += profit
-      holdingsMap[instrumentId].quantity -= quantity
+  if (userSettings?.dashboardLayout) {
+    try {
+      const layoutData = userSettings.dashboardLayout as any
+      dashboardLayout = layoutData.dashboardLayout || DEFAULT_LAYOUTS
+      toolbox = layoutData.toolbox || DEFAULT_TOOLBOX
+    } catch (error) {
+      console.error("Error parsing dashboardLayout:", error)
     }
   }
 
-  await prisma.holdings.deleteMany({ where: { userId } })
-  for (const [instrumentId, holding] of Object.entries(holdingsMap)) {
-    if (holding.quantity > 0) {
-      const instrument = await prisma.instruments.findUnique({
-        where: { id: instrumentId },
-      })
-      const currentPrice = 100 // Placeholder: Fetch real-time price from an external API
-      const currentValue = holding.quantity * currentPrice
-      const unrealizedPnl =
-        (currentPrice - holding.averageCost) * holding.quantity
+  // Extract chartIds from dashboardLayout and toolbox
+  chartIds = [
+    ...Object.values(dashboardLayout)
+      .flat()
+      .map((item: GridItem) => item.chartId),
+    ...Object.values(toolbox)
+      .flat()
+      .map((item: GridItem) => item.chartId),
+  ].filter((chartId, index, self) => self.indexOf(chartId) === index) // Remove duplicates
 
-      await prisma.holdings.create({
-        data: {
-          userId,
-          instrumentId,
-          quantity: holding.quantity,
-          averageCost: holding.averageCost,
-          currentValue,
-          unrealizedPnl,
-        },
-      })
-      totalUnrealizedProfit += unrealizedPnl
-    }
+  // If no chartIds, use defaults
+  if (chartIds.length === 0) {
+    chartIds = [
+      ...Object.values(DEFAULT_LAYOUTS)
+        .flat()
+        .map((item: GridItem) => item.chartId),
+      ...Object.values(DEFAULT_TOOLBOX)
+        .flat()
+        .map((item: GridItem) => item.chartId),
+    ].filter((chartId, index, self) => self.indexOf(chartId) === index)
   }
 
-  const monthly: { [key: string]: monthlyPerformance } = {}
-  const yearly: { [key: string]: yearlyPerformance } = {}
-
-  for (const tx of transactions) {
-    const date = new Date(tx.transactionDate)
-    const year = date.getFullYear()
-    const month = date.getMonth() + 1
-    const monthKey = `${year}-${month}`
-    const yearKey = `${year}`
-
-    if (!monthly[monthKey]) {
-      monthly[monthKey] = {
-        id: "",
-        userId,
-        year,
-        month,
-        startingCapital: 0,
-        endingCapital: 0,
-        deposits: 0,
-        withdrawals: 0,
-        realizedProfit: 0,
-        unrealizedProfit: 0,
-        roiPercentage: 0,
-        bestPerformingInstrumentId: null,
-        worstPerformingInstrumentId: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+  // Compute chart data
+  const result: ChartData = {}
+  for (const chartId of chartIds) {
+    const handler = CHART_HANDLERS[chartId as keyof typeof CHART_HANDLERS]
+    if (handler) {
+      try {
+        result[chartId] = await handler(userId, prisma)
+      } catch (error) {
+        console.error(`Error computing ${chartId}:`, error)
+        result[chartId] = [] // Return empty data for failed charts
       }
     }
-
-    monthly[monthKey].realizedProfit =
-      (monthly[monthKey].realizedProfit || 0) + totalRealizedProfit
-    monthly[monthKey].unrealizedProfit =
-      (monthly[monthKey].unrealizedProfit || 0) + totalUnrealizedProfit
-    monthly[monthKey].roiPercentage =
-      ((monthly[monthKey].realizedProfit + monthly[monthKey].unrealizedProfit) /
-        monthly[monthKey].startingCapital) *
-      100
-
-    if (!yearly[yearKey]) {
-      yearly[yearKey] = {
-        id: "",
-        userId,
-        year,
-        startingCapital: 0,
-        endingCapital: 0,
-        deposits: 0,
-        withdrawals: 0,
-        realizedProfit: 0,
-        unrealizedProfit: 0,
-        roiPercentage: 0,
-        bestPerformingInstrumentId: null,
-        worstPerformingInstrumentId: null,
-        bestPerformingMonth: null,
-        worstPerformingMonth: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
-    }
-    yearly[yearKey].realizedProfit =
-      (yearly[yearKey].realizedProfit || 0) + totalRealizedProfit
-    yearly[yearKey].unrealizedProfit =
-      (yearly[yearKey].unrealizedProfit || 0) + totalUnrealizedProfit
   }
 
-  for (const monthKey in monthly) {
-    const [year, month] = monthKey.split("-").map(Number)
-    await prisma.monthlyPerformance.upsert({
-      where: { userId_year_month: { userId, year, month } },
-      update: monthly[monthKey],
-      create: monthly[monthKey],
-    })
-  }
-
-  for (const yearKey in yearly) {
-    const year = Number(yearKey)
-    await prisma.yearlyPerformance.upsert({
-      where: { userId_year: { userId, year } },
-      update: yearly[yearKey],
-      create: yearly[yearKey],
-    })
-  }
+  return result
 }
