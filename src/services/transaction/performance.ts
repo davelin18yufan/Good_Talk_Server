@@ -10,12 +10,10 @@ import { ChartData } from "@/types/Transaction"
 export async function recalculatePerformance(
   userId: string
 ): Promise<ChartData> {
-  // Fetch user settings
   const userSettings = await prisma.userSettings.findUnique({
     where: { userId },
   })
 
-  // Parse dashboardLayout and toolbox
   let chartIds: string[] = []
   let dashboardLayout: ResponsiveLayouts = DEFAULT_LAYOUTS
   let toolbox: ResponsiveLayouts = DEFAULT_TOOLBOX
@@ -30,7 +28,6 @@ export async function recalculatePerformance(
     }
   }
 
-  // Extract chartIds from dashboardLayout and toolbox
   chartIds = [
     ...Object.values(dashboardLayout)
       .flat()
@@ -38,9 +35,8 @@ export async function recalculatePerformance(
     ...Object.values(toolbox)
       .flat()
       .map((item: GridItem) => item.chartId),
-  ].filter((chartId, index, self) => self.indexOf(chartId) === index) // Remove duplicates
+  ].filter((chartId, index, self) => self.indexOf(chartId) === index)
 
-  // If no chartIds, use defaults
   if (chartIds.length === 0) {
     chartIds = [
       ...Object.values(DEFAULT_LAYOUTS)
@@ -52,7 +48,6 @@ export async function recalculatePerformance(
     ].filter((chartId, index, self) => self.indexOf(chartId) === index)
   }
 
-  // Compute chart data
   const result: ChartData = {}
   for (const chartId of chartIds) {
     const handler = CHART_HANDLERS[chartId as keyof typeof CHART_HANDLERS]
@@ -61,7 +56,7 @@ export async function recalculatePerformance(
         result[chartId] = await handler(userId, prisma)
       } catch (error) {
         console.error(`Error computing ${chartId}:`, error)
-        result[chartId] = [] // Return empty data for failed charts
+        result[chartId] = []
       }
     }
   }

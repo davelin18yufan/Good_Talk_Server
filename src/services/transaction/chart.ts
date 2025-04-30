@@ -1,6 +1,11 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/database"
+import { fetchMarketPrice, getPositionCurrentPrices } from "@/helpers/fugle"
+import { CurrentPrices } from "@/types/Fugle"
+import { GenericChartData } from "@/types/Transaction"
 
-export async function calculateProfitChart(userId: string, prisma: PrismaClient) {
+export async function calculateProfitChart(
+  userId: string,
+): Promise<GenericChartData> {
   const transactions = await prisma.transactions.findMany({
     where: { userId },
     include: { instruments: true },
@@ -120,7 +125,9 @@ export async function calculateProfitChart(userId: string, prisma: PrismaClient)
   return result
 }
 
-export async function calculateRealizedPnlChart(userId: string, prisma: PrismaClient) {
+export async function calculateRealizedPnlChart(
+  userId: string,
+): Promise<GenericChartData> {
   const transactions = await prisma.transactions.findMany({
     where: { userId },
     include: { instruments: true },
@@ -186,12 +193,14 @@ export async function calculateRealizedPnlChart(userId: string, prisma: PrismaCl
   return Object.entries(weekly).map(([week, data]) => ({
     week,
     成交筆數: data.trades,
-    報酬率: data.trades > 0 ? (data.profit / data.trades).toFixed(2) : 0,
+    報酬率: data.trades > 0 ? (data.profit / data.trades).toFixed(2) : "0",
     獲利筆數: data.profitable,
   }))
 }
 
-export async function calculateTradeFundBase(userId: string, prisma: PrismaClient) {
+export async function calculateTradeFundBase(
+  userId: string,
+): Promise<GenericChartData> {
   const transactions = await prisma.transactions.findMany({
     where: { userId },
     include: { instruments: true },
@@ -205,7 +214,11 @@ export async function calculateTradeFundBase(userId: string, prisma: PrismaClien
   let cashBalance = 0
   let totalMarketValue = 0
   const holdingsMap: {
-    [instrumentId: string]: { quantity: number; averageCost: number }
+    [instrumentId: string]: {
+      quantity: number
+      averageCost: number
+      symbol: string
+    }
   } = {}
 
   for (const tx of transactions) {
@@ -215,7 +228,11 @@ export async function calculateTradeFundBase(userId: string, prisma: PrismaClien
     const commission = tx.commission?.toNumber() || 0
 
     if (!holdingsMap[instrumentId]) {
-      holdingsMap[instrumentId] = { quantity: 0, averageCost: 0 }
+      holdingsMap[instrumentId] = {
+        quantity: 0,
+        averageCost: 0,
+        symbol: tx.instruments?.symbol || "",
+      }
     }
 
     if (tx.transactionType.includes("BUY")) {
@@ -227,6 +244,7 @@ export async function calculateTradeFundBase(userId: string, prisma: PrismaClien
           commission) /
         newQuantity
       holdingsMap[instrumentId] = {
+        ...current,
         quantity: newQuantity,
         averageCost: newCost,
       }
@@ -237,14 +255,19 @@ export async function calculateTradeFundBase(userId: string, prisma: PrismaClien
     }
   }
 
+  const symbols = Object.values(holdingsMap)
+    .filter((holding) => holding.quantity > 0)
+    .map((holding) => holding.symbol)
+  const currentPrices: CurrentPrices = await getPositionCurrentPrices(symbols)
+
   for (const [instrumentId, holding] of Object.entries(holdingsMap)) {
     if (holding.quantity > 0) {
-      const instrument = await prisma.instruments.findUnique({
-        where: { id: instrumentId },
-      })
-      if (!instrument) continue
-
-      const currentPrice = await fetchMarketPrice(instrument.symbol)
+      const currentPriceObj = currentPrices.find(
+        (p) => p.symbol === holding.symbol
+      )
+      const currentPrice = currentPriceObj
+        ? currentPriceObj.closePrice
+        : await fetchMarketPrice(holding.symbol)
       const currentValue = holding.quantity * currentPrice
       totalMarketValue += currentValue
     }
@@ -259,7 +282,9 @@ export async function calculateTradeFundBase(userId: string, prisma: PrismaClien
   ]
 }
 
-export async function calculateTradeSummary(userId: string, prisma: PrismaClient) {
+export async function calculateTradeSummary(
+  userId: string,
+): Promise<GenericChartData> {
   const transactions = await prisma.transactions.findMany({
     where: { userId },
     include: { instruments: true },
@@ -267,18 +292,17 @@ export async function calculateTradeSummary(userId: string, prisma: PrismaClient
   })
 
   const holdingsMap: {
-    [instrumentId: string]: { quantity: number; averageCost: number }
+    [instrumentId: string]: {
+      quantity: number
+      averageCost: number
+      symbol: string
+    }
   } = {}
   const position: Array<{
     asset_id: string
     asset_name: string
     quantity: number
     cost: number
-  }> = []
-  const currentPrices: Array<{
-    symbol: string
-    name: string
-    closePrice: number
   }> = []
   let totalMarketValue = 0
 
@@ -289,7 +313,11 @@ export async function calculateTradeSummary(userId: string, prisma: PrismaClient
     const commission = tx.commission?.toNumber() || 0
 
     if (!holdingsMap[instrumentId]) {
-      holdingsMap[instrumentId] = { quantity: 0, averageCost: 0 }
+      holdingsMap[instrumentId] = {
+        quantity: 0,
+        averageCost: 0,
+        symbol: tx.instruments?.symbol || "",
+      }
     }
 
     if (tx.transactionType.includes("BUY")) {
@@ -301,6 +329,7 @@ export async function calculateTradeSummary(userId: string, prisma: PrismaClient
           commission) /
         newQuantity
       holdingsMap[instrumentId] = {
+        ...current,
         quantity: newQuantity,
         averageCost: newCost,
       }
@@ -309,6 +338,11 @@ export async function calculateTradeSummary(userId: string, prisma: PrismaClient
     }
   }
 
+  const symbols = Object.values(holdingsMap)
+    .filter((holding) => holding.quantity > 0)
+    .map((holding) => holding.symbol)
+  const currentPrices: CurrentPrices = await getPositionCurrentPrices(symbols)
+
   for (const [instrumentId, holding] of Object.entries(holdingsMap)) {
     if (holding.quantity > 0) {
       const instrument = await prisma.instruments.findUnique({
@@ -316,7 +350,12 @@ export async function calculateTradeSummary(userId: string, prisma: PrismaClient
       })
       if (!instrument) continue
 
-      const currentPrice = await fetchMarketPrice(instrument.symbol)
+      const currentPriceObj = currentPrices.find(
+        (p) => p.symbol === instrument.symbol
+      )
+      const currentPrice = currentPriceObj
+        ? currentPriceObj.closePrice
+        : await fetchMarketPrice(instrument.symbol)
       const currentValue = holding.quantity * currentPrice
       totalMarketValue += currentValue
 
@@ -325,11 +364,6 @@ export async function calculateTradeSummary(userId: string, prisma: PrismaClient
         asset_name: instrument.name,
         quantity: holding.quantity,
         cost: holding.averageCost,
-      })
-      currentPrices.push({
-        symbol: instrument.symbol,
-        name: instrument.name,
-        closePrice: currentPrice,
       })
     }
   }
@@ -341,7 +375,7 @@ export async function calculateTradeSummary(userId: string, prisma: PrismaClient
 
   return {
     asset: {
-      _id: userId,
+      id: userId,
       totalCost,
       totalMarketPrice: totalMarketValue,
       position,
@@ -350,21 +384,21 @@ export async function calculateTradeSummary(userId: string, prisma: PrismaClient
   }
 }
 
-export async function calculateTradeLog(userId: string, prisma: PrismaClient) {
+export async function calculateTradeLog(
+  userId: string,
+): Promise<GenericChartData> {
   const transactions = await prisma.transactions.findMany({
     where: { userId },
     include: {
       instruments: { select: { symbol: true, name: true } },
-      investmentPlans: {
-        select: { tradeType: true, operation: true },
-      },
+      investmentPlans: { select: { tradeType: true, operation: true } },
     },
     orderBy: { transactionDate: "desc" },
-    take: 10, // Default limit
+    take: 10,
   })
 
   return transactions.map((tx) => ({
-    _id: tx.id,
+    id: tx.id,
     type: tx.investmentPlans?.tradeType || "多單",
     action: tx.transactionType,
     target: {
@@ -381,18 +415,18 @@ export async function calculateTradeLog(userId: string, prisma: PrismaClient) {
   }))
 }
 
-export async function calculateTradePlan(userId: string, prisma: PrismaClient) {
+export async function calculateTradePlan(
+  userId: string,
+): Promise<GenericChartData> {
   const plans = await prisma.investmentPlans.findMany({
     where: { userId },
-    include: {
-      instruments: { select: { symbol: true, name: true } },
-    },
+    include: { instruments: { select: { symbol: true, name: true } } },
     orderBy: { startDate: "desc" },
-    take: 10, // Default limit
+    take: 10,
   })
 
   return plans.map((plan) => ({
-    _id: plan.id,
+    id: plan.id,
     type: plan.tradeType,
     target: {
       symbol: plan.instruments?.symbol || "",
@@ -414,7 +448,9 @@ export async function calculateTradePlan(userId: string, prisma: PrismaClient) {
   }))
 }
 
-export async function calculateGoalProgress(userId: string, prisma: PrismaClient) {
+export async function calculateGoalProgress(
+  userId: string
+): Promise<GenericChartData> {
   const goals = await prisma.userGoals.findMany({ where: { userId } })
   const userSettings = await prisma.userSettings.findUnique({
     where: { userId },
@@ -458,10 +494,7 @@ export async function calculateGoalProgress(userId: string, prisma: PrismaClient
   ]
 }
 
-export async function calculatePortfolioAllocationChart(
-  userId: string,
-  prisma: PrismaClient
-) {
+export async function calculatePortfolioAllocationChart(userId: string) {
   const holdings = await prisma.holdings.findMany({
     where: { userId },
     include: { instruments: { select: { name: true } } },
