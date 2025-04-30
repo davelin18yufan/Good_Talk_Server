@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client"
+import { prisma } from "@/database"
 import {
   CHART_HANDLERS,
   DEFAULT_LAYOUTS,
@@ -6,8 +6,6 @@ import {
 } from "@/constants/charts"
 import { ResponsiveLayouts, GridItem } from "@/types"
 import { ChartData } from "@/types/Transaction"
-
-const prisma = new PrismaClient()
 
 export async function recalculatePerformance(
   userId: string

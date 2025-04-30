@@ -1,12 +1,11 @@
-import { PrismaClient, transactions } from "@prisma/client"
+import { transactions } from "@prisma/client"
+import { prisma } from "@/database"
 import { recalculatePerformance } from "./performance"
 import {
   type CreateTransactionDto,
   type UpdateTransactionDto,
   type GetTransactionsDto,
 } from "@/types/Transaction"
-
-const prisma = new PrismaClient()
 
 export const getTransactions = async (
   params: GetTransactionsDto
