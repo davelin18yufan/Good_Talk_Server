@@ -104,6 +104,7 @@ model investmentPlans {
   operation    String    @map("operation") @db.VarChar(50)
   instrumentId String    @map("instrument_id") @db.Uuid
   stopPrice    Decimal?  @map("stop_price") @db.Decimal(5, 2)
+  stopType     String    @map("stop_type") @db.VarChar(20)
   instruments  instruments?    @relation(fields: [instrumentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users        users?    @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   transactions       transactions[]
