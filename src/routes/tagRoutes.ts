@@ -51,4 +51,4 @@ router.post("/", validateTag, asyncHandler(createTag))
 router.put("/:id", [...validateUUID, ...validateTag], asyncHandler(updateTag))
 router.delete("/:id", validateUUID, asyncHandler(deleteTag))
 
-export default router
+export const tagRoutes = router

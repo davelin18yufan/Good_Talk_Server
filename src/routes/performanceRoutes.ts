@@ -7,4 +7,4 @@ const router = express.Router()
 // Route to get performance data for a user
 router.get("/:userId", asyncHandler(getPerformance))
 
-export default router
+export const performanceRoutes = router

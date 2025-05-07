@@ -61,4 +61,4 @@ router.put(
 router.delete("/:id", validateUUID, asyncHandler(deleteTransaction))
 router.post("/uploadLog", upload.single("file"), asyncHandler(uploadTransactions))
 
-export default router
+export const transactionRoutes = router
