@@ -6,6 +6,7 @@ import {
   getUserSettings,
   createUserSettings,
   updateUserSettings,
+  updateDashboardLayout,
 } from "../controllers/userSettingsController"
 
 const router = Router()
@@ -24,11 +25,77 @@ const validateUserSettings = [
   body("aka").optional().isString().trim().withMessage("AKA must be a string"),
 ]
 
+const validateDashboardLayout = [
+  body("dashboardLayout")
+    .isObject()
+    .withMessage("Dashboard layout must be an object")
+    .custom((value) => {
+      const requiredKeys = ["lg", "md", "sm", "xs", "xxs"]
+      if (!requiredKeys.every((key) => key in value)) {
+        throw new Error(
+          "Dashboard layout must include all responsive sizes (lg, md, sm, xs, xxs)"
+        )
+      }
+      return requiredKeys.every(
+        (key) =>
+          Array.isArray(value[key]) &&
+          value[key].every(
+            (item: any) =>
+              typeof item.w === "number" &&
+              typeof item.h === "number" &&
+              typeof item.x === "number" &&
+              typeof item.y === "number" &&
+              typeof item.i === "string" &&
+              typeof item.minW === "number" &&
+              typeof item.minH === "number" &&
+              typeof item.moved === "boolean" &&
+              typeof item.static === "boolean" &&
+              typeof item.chartId === "string"
+          )
+      )
+    })
+    .withMessage("Invalid dashboard layout format"),
+  body("toolbox")
+    .isObject()
+    .withMessage("Toolbox must be an object")
+    .custom((value) => {
+      const requiredKeys = ["lg", "md", "sm", "xs", "xxs"]
+      if (!requiredKeys.every((key) => key in value)) {
+        throw new Error(
+          "Toolbox must include all responsive sizes (lg, md, sm, xs, xxs)"
+        )
+      }
+      return requiredKeys.every(
+        (key) =>
+          Array.isArray(value[key]) &&
+          value[key].every(
+            (item: any) =>
+              typeof item.w === "number" &&
+              typeof item.h === "number" &&
+              typeof item.x === "number" &&
+              typeof item.y === "number" &&
+              typeof item.i === "string" &&
+              typeof item.minW === "number" &&
+              typeof item.minH === "number" &&
+              typeof item.moved === "boolean" &&
+              typeof item.static === "boolean" &&
+              typeof item.chartId === "string"
+          )
+      )
+    })
+    .withMessage("Invalid toolbox format"),
+]
+
 //* Protect all user routes with authentication
 router.use(auth)
 
 router.get("/", asyncHandler(getUserSettings))
 router.post("/", validateUserSettings, asyncHandler(createUserSettings))
 router.put("/", validateUserSettings, asyncHandler(updateUserSettings))
+router.patch(
+  "/dashboard",
+  validateDashboardLayout,
+  asyncHandler(updateDashboardLayout)
+)
 
 export const userSettingsRoutes = router

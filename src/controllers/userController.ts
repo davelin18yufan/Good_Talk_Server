@@ -25,7 +25,6 @@ export const getUserById = async (
 ) => {
   try {
     const { id } = req.params
-    console.log(id)
     const user = await userService.getUserById(id)
 
     if (!user) {

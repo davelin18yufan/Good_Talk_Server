@@ -75,11 +75,14 @@ model instruments {
   id          String     @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
   externalId  String     @map("external_id") @db.VarChar(50)
   type        String     @map("type") @db.VarChar(20)
+  name        String     @map("name") @db.VarChar(30)
   symbol      String     @map("symbol") @db.VarChar(20)
   market      String?    @map("market") @db.VarChar(20)
   currency    String?    @map("currency") @db.VarChar(10)
   createdAt   DateTime?  @default(now()) @map("created_at") @db.Timestamptz(6)
   holdings    holdings[]
+  transactions transactions[]
+  investmentPlans investmentPlans[]
 
   @@map("instruments")
 }
@@ -101,7 +104,10 @@ model investmentPlans {
   operation    String    @map("operation") @db.VarChar(50)
   instrumentId String    @map("instrument_id") @db.Uuid
   stopPrice    Decimal?  @map("stop_price") @db.Decimal(5, 2)
+  stopType     String    @map("stop_type") @db.VarChar(20)
+  instruments  instruments?    @relation(fields: [instrumentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users        users?    @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  transactions       transactions[]
 
   @@map("investment_plans")
 }
@@ -191,6 +197,7 @@ model transactions {
   id              String    @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
   userId          String?   @map("user_id") @db.Uuid
   instrumentId    String?   @map("instrument_id") @db.Uuid
+  investmentPlanId String?  @map("investment_plan_id") @db.Uuid
   transactionType String    @map("transaction_type") @db.VarChar(20)
   quantity        Decimal   @map("quantity") @db.Decimal(15, 4)
   price           Decimal   @map("price") @db.Decimal(15, 4)
@@ -199,7 +206,12 @@ model transactions {
   planId          String?   @map("plan_id") @db.Uuid
   notes           String?   @map("notes")
   createdAt       DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime? @default(now()) @map("updated_at") @db.Timestamptz(6)
   users           users?    @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  /// Links to the instruments table for the traded asset
+  instruments     instruments?    @relation(fields: [instrumentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  /// Links to the investmentPlans table for the associated plan
+  investmentPlans investmentPlans? @relation(fields: [investmentPlanId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("transactions")
 }
@@ -285,6 +297,7 @@ model users {
   userSettings       userSettings?
   userTagPreferences userTagPreferences[]
   yearlyPerformance  yearlyPerformance[]
+  userGoals          userGoals[]
   resetToken        String?               @map("reset_token")
   resetTokenExpiry  DateTime?             @map("reset_token_expiry") @db.Timestamptz(6)
 
@@ -312,4 +325,30 @@ model yearlyPerformance {
 
   @@unique([userId, year])
   @@map("yearly_performance")
+}
+
+model benchmarks {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String    @db.VarChar(50) 
+  year        Int
+  month       Int
+  return      Decimal   @db.Decimal(8, 4) 
+  createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime? @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([name, year, month])
+  @@map("benchmarks")
+}
+
+model userGoals {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  title         String    @db.VarChar(50) 
+  targetAmount  Decimal   @map("target_amount") @db.Decimal(15, 2)
+  currentAmount Decimal   @map("current_amount") @default(0) @db.Decimal(15, 2)
+  createdAt     DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime? @default(now()) @map("updated_at") @db.Timestamptz(6)
+  users         users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_goals")
 }

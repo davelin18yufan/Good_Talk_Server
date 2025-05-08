@@ -1,13 +1,18 @@
+import { BREAKPOINTS } from "@/constants/charts"
 import { Prisma } from "@prisma/client"
 
 // user create DTO
 export interface CreateUserSettingsDto {
-  initialCapital: Prisma.Decimal
-  leverageRatio: Prisma.Decimal
-  currentCapital?: Prisma.Decimal
-  commissionRate?: Prisma.Decimal
-  dashboardLayout?: Prisma.InputJsonValue
-  riskTolerance: Prisma.Decimal
+  userId: string 
+  initialCapital: Prisma.Decimal | number // 接受 number（Prisma 會轉為 Decimal）
+  leverageRatio: Prisma.Decimal | number
+  currentCapital?: Prisma.Decimal | number
+  commissionRate?: Prisma.Decimal | number
+  dashboardLayout?: {
+    dashboardLayout: ResponsiveLayouts
+    toolbox: ResponsiveLayouts
+  } 
+  riskTolerance: Prisma.Decimal | number
   avatarUrl?: string
   profileVideoId?: string
   bio?: string
@@ -15,17 +20,26 @@ export interface CreateUserSettingsDto {
   aka?: string
 }
 
-// user update DTO
-export interface UpdateUserSettingsDto {
-  initialCapital?: Prisma.Decimal
-  leverageRatio?: Prisma.Decimal
-  currentCapital?: Prisma.Decimal
-  commissionRate?: Prisma.Decimal
-  dashboardLayout?: Prisma.InputJsonValue
-  riskTolerance?: Prisma.Decimal
-  avatarUrl?: string
-  profileVideoId?: string
-  bio?: string
-  location?: string
-  aka?: string
+export type UpdateUserSettingsDto = Partial<CreateUserSettingsDto>
+
+export interface UpdateDashboardLayoutDto {
+  dashboardLayout: ResponsiveLayouts
+  toolbox: ResponsiveLayouts
 }
+
+export interface GridItem {
+  w: number // 寬度
+  h: number // 高度
+  x: number // x 座標
+  y: number // y 座標
+  i: string // ID
+  minW: number // 最小寬度
+  minH: number // 最小高度
+  moved: boolean // 是否被移動
+  static: boolean // 是否靜態（不可拖動）
+  chartId: string // 圖表 ID
+}
+
+export type Breakpoint = (typeof BREAKPOINTS)[number]
+
+export type ResponsiveLayouts = Record<Breakpoint, GridItem[]>
