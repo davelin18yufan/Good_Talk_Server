@@ -1,124 +1,210 @@
-import { investmentPlans } from "@prisma/client"
-import { prisma } from "@/database"
+import { CreateInvestmentPlanDto,UpdateInvestmentPlanDto } from "@/types/Plan";
+import { ActionType, PlanType, StopType, TradePlanItem } from "@/types/Transaction";
+import { prisma } from "@/database";
 
-import {
-  type CreateInvestmentPlanDto,
-  type UpdateInvestmentPlanDto,
-  type GetInvestmentPlansDto,
-} from "@/types/Plan"
-
-export const getInvestmentPlans = async (
-  params: GetInvestmentPlansDto
-): Promise<investmentPlans[]> => {
-  const { userId, limit, offset } = params
-  return prisma.investmentPlans.findMany({
-    where: { userId },
-    include: {
-      instruments: { select: { symbol: true, name: true } },
-    },
-    orderBy: { startDate: "desc" },
-    take: limit,
-    skip: offset,
-  })
-}
-
-export const getInvestmentPlanById = async (
-  id: string,
-  userId: string
-): Promise<investmentPlans | null> => {
-  return prisma.investmentPlans.findFirst({
-    where: { id, userId },
-    include: {
-      instruments: { select: { symbol: true, name: true } },
-    },
-  })
-}
-
-export const createInvestmentPlan = async (
-  data: CreateInvestmentPlanDto,
-  userId: string
-): Promise<investmentPlans> => {
-  return prisma.investmentPlans.create({
-    data: {
-      userId,
-      instrumentId: data.instrumentId,
-      tradeType: data.tradeType,
-      operation: data.operation,
-      entryPrice: data.entryPrice,
-      targetPrice: data.targetPrice,
-      stopPrice: data.stopPrice,
-      targetAmount: data.targetAmount,
-      startDate: new Date(data.startDate),
-      endDate: new Date(data.endDate),
-      comment: data.comment,
-      status: data.status,
-    },
-    include: {
-      instruments: { select: { symbol: true, name: true } },
-    },
-  })
-}
-
-export const updateInvestmentPlan = async (
-  id: string,
-  data: UpdateInvestmentPlanDto,
-  userId: string
-): Promise<investmentPlans> => {
-  return prisma.investmentPlans.update({
-    where: { id, userId },
-    data: {
-      ...data,
-      startDate: data.startDate ? new Date(data.startDate) : undefined,
-      endDate: data.endDate ? new Date(data.endDate) : undefined,
-      updatedAt: new Date(),
-    },
-    include: {
-      instruments: { select: { symbol: true, name: true } },
-    },
-  })
-}
-
-export const deleteInvestmentPlan = async (
-  id: string,
-  userId: string
-): Promise<void> => {
-  await prisma.investmentPlans.delete({ where: { id, userId } })
-}
-
-export const bulkCreateInvestmentPlans = async (
-  data: any[],
-  userId: string
-): Promise<investmentPlans[]> => {
-  const plans: investmentPlans[] = []
-
-  for (const row of data) {
-    const instrument = await prisma.instruments.findFirst({
-      where: { symbol: row.instrumentSymbol },
-    })
-    if (!instrument)
-      throw new Error(`Instrument not found: ${row.instrumentSymbol}`)
-
-    const plan = await prisma.investmentPlans.create({
-      data: {
-        userId,
-        instrumentId: instrument.id,
-        tradeType: row.tradeType,
-        operation: row.operation,
-        entryPrice: parseFloat(row.entryPrice),
-        targetPrice: parseFloat(row.targetPrice),
-        stopPrice: row.stopPrice ? parseFloat(row.stopPrice) : null,
-        targetAmount: parseFloat(row.targetAmount),
-        startDate: new Date(row.startDate),
-        endDate: new Date(row.endDate),
-        comment: row.comment,
-        status: row.status,
-      },
-      include: {
-        instruments: { select: { symbol: true, name: true } },
-      },
-    })
-    plans.push(plan)
+export const getUserPlans = async (userId: string): Promise<TradePlanItem[]> => {
+  const user = await prisma.users.findUnique({ where: { id: userId } });
+  if (!user) {
+    throw new Error("User not found");
   }
 
-  return plans
-}
+  const plans = await prisma.investmentPlans.findMany({
+    where: { userId },
+    include: { instruments: { select: { symbol: true, name: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (plans.length === 0) {
+    return [];
+  }
+
+  return plans.map((plan) => {
+    const expectation = plan.targetPrice && plan.entryPrice
+      ? ((plan.targetPrice.toNumber() - plan.entryPrice.toNumber()) / plan.entryPrice.toNumber()) * 100
+      : 0;
+
+    return ({
+      id: plan.id,
+      type: (plan.tradeType) as PlanType,
+      target: {
+        symbol: plan.instruments?.symbol ?? "",
+        name: plan.instruments?.name ?? "",
+      },
+      action: (plan.operation) as ActionType,
+      entryPrice: plan.entryPrice?.toNumber() ?? 0,
+      targetPrice: plan.targetPrice?.toNumber() ?? 0,
+      stop: {
+        type: (plan.stopType) as StopType,
+        price: plan.stopPrice?.toNumber() ?? 0,
+      },
+      expectation,
+      isExecuted: plan.status === "EXECUTED",
+      comment: plan.comment ?? "",
+  })});
+};
+
+export const createPlan = async (userId: string, data: CreateInvestmentPlanDto): Promise<TradePlanItem> => {
+  const { tradeType, symbol, operation, entryPrice, targetPrice, stopType, stopPrice, comment } = data;
+
+  if (!["多單", "空單"].includes(tradeType)) {
+    throw new Error("Invalid tradeType");
+  }
+  if (!["BUY", "SELL"].includes(operation)) {
+    throw new Error("Invalid operation");
+  }
+  if (!["停損", "停利"].includes(stopType)) {
+    throw new Error("Invalid stopType");
+  }
+
+  const user = await prisma.users.findUnique({ where: { id: userId } });
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const instrument = await prisma.instruments.findFirst({ where: { symbol } });
+  if (!instrument) {
+    throw new Error("Instrument not found");
+  }
+
+  const plan = await prisma.investmentPlans.create({
+    data: {
+      userId,
+      instrumentId: instrument.id,
+      tradeType,
+      operation,
+      entryPrice,
+      targetPrice,
+      stopType,
+      stopPrice,
+      // Removed expectation as it is not part of the investmentPlansCreateInput type
+      comment,
+      status: "PENDING",
+    },
+    include: { instruments: { select: { symbol: true, name: true } } },
+  });
+
+  return {
+    id: plan.id,
+    type: plan.tradeType as PlanType,
+    target: {
+      symbol: plan.instruments?.symbol,
+      name: plan.instruments?.name,
+    },
+    action: plan.operation as ActionType,
+    entryPrice: plan.entryPrice?.toNumber() ?? 0,
+    targetPrice: plan.targetPrice?.toNumber() ?? 0,
+    stop: {
+      type: plan.stopType as StopType,
+      price: plan.stopPrice?.toNumber() ?? 0,
+    },
+    expectation: plan.targetPrice && plan.entryPrice
+      ? ((plan.targetPrice.toNumber() - plan.entryPrice.toNumber()) / plan.entryPrice.toNumber()) * 100 : 0,
+    isExecuted: plan.status === "EXECUTED",
+    comment: plan.comment ?? "",
+  };
+};
+
+export const updatePlan = async (userId: string, planId: string, data: UpdateInvestmentPlanDto): Promise<TradePlanItem> => {
+  const { tradeType, symbol, operation, entryPrice, targetPrice, stopType, stopPrice, comment } = data;
+
+  if (tradeType && !["多單", "空單"].includes(tradeType)) {
+    throw new Error("Invalid tradeType");
+  }
+  if (operation && !["BUY", "SELL"].includes(operation)) {
+    throw new Error("Invalid operation");
+  }
+  if (stopType && !["停損", "停利"].includes(stopType)) {
+    throw new Error("Invalid stopType");
+  }
+
+  
+  const plan = await prisma.investmentPlans.findUnique({ where: { id: planId } });
+  if (!plan || plan.userId !== userId) {
+    throw new Error("Plan not found");
+  }
+  
+  // find corresponding instrument
+  const instrument = await prisma.instruments.findFirst({ where: { symbol } });
+  if (!instrument) {
+    throw new Error("Instrument not found");
+  }
+
+  const updatedPlan = await prisma.investmentPlans.update({
+    where: { id: planId },
+    data: {
+      tradeType,
+      instrumentId: instrument.id,
+      operation,
+      entryPrice,
+      targetPrice,
+      stopType,
+      stopPrice,
+      comment,
+    },
+    include: { instruments: { select: { symbol: true, name: true } } },
+  });
+
+  return {
+    id: updatedPlan.id,
+    type: updatedPlan.tradeType as PlanType,
+    target: {
+      symbol: updatedPlan.instruments?.symbol,
+      name: updatedPlan.instruments?.name,
+    },
+    action: updatedPlan.operation as ActionType,
+    entryPrice: updatedPlan.entryPrice?.toNumber() ?? 0,
+    targetPrice: updatedPlan.targetPrice?.toNumber() ?? 0,
+    stop: {
+      type: updatedPlan.stopType as StopType,
+      price: updatedPlan.stopPrice?.toNumber() ?? 0,
+    },
+    expectation: updatedPlan.targetPrice && updatedPlan.entryPrice
+      ? ((updatedPlan.targetPrice.toNumber() - updatedPlan.entryPrice.toNumber()) / updatedPlan.entryPrice.toNumber()) * 100 : 0,
+    isExecuted: updatedPlan.status === "EXECUTED",
+    comment: updatedPlan.comment ?? "",
+  };
+};
+
+export const deletePlan = async (userId: string, planId: string): Promise<void> => {
+  const plan = await prisma.investmentPlans.findUnique({ where: { id: planId } });
+  if (!plan || plan.userId !== userId) {
+    throw new Error("Plan not found");
+  }
+
+  await prisma.investmentPlans.delete({ where: { id: planId } });
+};
+
+export const togglePlanExecuted = async (userId: string, planId: string): Promise<TradePlanItem> => {
+  const plan = await prisma.investmentPlans.findUnique({ where: { id: planId } });
+  if (!plan || plan.userId !== userId) {
+    throw new Error("Plan not found");
+  }
+
+  const newStatus = plan.status === "EXECUTED" ? "PENDING" : "EXECUTED";
+
+  const updatedPlan = await prisma.investmentPlans.update({
+    where: { id: planId },
+    data: { status: newStatus },
+    include: { instruments: { select: { symbol: true, name: true } } },
+  });
+
+  return {
+    id: updatedPlan.id,
+    type: updatedPlan.tradeType as PlanType,
+    target: {
+      symbol: updatedPlan.instruments?.symbol ?? "",
+      name: updatedPlan.instruments?.name ?? "",
+    },
+    action: updatedPlan.operation as ActionType,
+    entryPrice: updatedPlan.entryPrice?.toNumber() ?? 0,
+    targetPrice: updatedPlan.targetPrice?.toNumber() ?? 0,
+    stop: {
+      type: updatedPlan.stopType as StopType,
+      price: updatedPlan.stopPrice?.toNumber() ?? 0,
+    },
+    expectation: updatedPlan.targetPrice && updatedPlan.entryPrice
+      ? ((updatedPlan.targetPrice.toNumber() - updatedPlan.entryPrice.toNumber()) / updatedPlan.entryPrice.toNumber()) * 100 : 0,
+    isExecuted: updatedPlan.status === "EXECUTED",
+    comment: updatedPlan.comment ?? "",
+  };
+};

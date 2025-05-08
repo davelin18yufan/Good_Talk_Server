@@ -21,6 +21,26 @@ export interface GetTransactionsDto {
   offset?: number
 }
 
+//* List（Actions, PlanTypes, StopTypes, LogTypes）
+export const actions = ["建倉", "加碼", "平倉", "出場"] as const
+export const planTypes = ["多單", "空單"] as const
+export const stopTypes = ["停損", "停利"] as const
+export const logTypes = [
+  "現股買進",
+  "現股賣出",
+  "融資買進",
+  "融資賣出",
+  "沖買",
+  "沖賣",
+] as const
+
+// Reference
+export type PlanType = (typeof planTypes)[number]
+export type ActionType = (typeof actions)[number]
+export type StopType = (typeof stopTypes)[number]
+export type LogType = (typeof logTypes)[number]
+
+
 export type ChartId = (typeof SUPPORTED_CHARTS)[number]
 
 export interface ChartHandler {
@@ -81,7 +101,6 @@ export interface TradeLogItem {
   target: {
     symbol: string;
     name: string;
-    [key: string]: any;
   };
   date: string;
   price: number;
@@ -91,25 +110,23 @@ export interface TradeLogItem {
 }
 
 export interface TradePlanItem {
-  id: string; // Plan ID
-  type: string;
+  id: string // Plan ID
+  type: PlanType // "多單" or "空單"
   target: {
-    symbol: string;
-    name: string;
-    [key: string]: any;
-  };
-  action: string;
-  entryPrice: number;
-  targetPrice: number;
+    symbol?: string
+    name?: string
+  }
+  action: ActionType 
+  entryPrice: number
+  targetPrice: number
   stop: {
-    type: string;
-    price: number;
-    [key: string]: any;
-  };
-  expectation: number;
-  isExecuted: boolean;
-  comment?: string;
-  [key: string]: any;
+    type: StopType // "停損" or "停利"
+    price: number
+  }
+  expectation: number
+  isExecuted: boolean
+  comment?: string
+  [key: string]: any
 }
 
 export interface GoalProgressItem {

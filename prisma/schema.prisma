@@ -197,6 +197,7 @@ model transactions {
   id              String    @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
   userId          String?   @map("user_id") @db.Uuid
   instrumentId    String?   @map("instrument_id") @db.Uuid
+  investmentPlanId String?  @map("investment_plan_id") @db.Uuid
   transactionType String    @map("transaction_type") @db.VarChar(20)
   quantity        Decimal   @map("quantity") @db.Decimal(15, 4)
   price           Decimal   @map("price") @db.Decimal(15, 4)
@@ -210,7 +211,7 @@ model transactions {
   /// Links to the instruments table for the traded asset
   instruments     instruments?    @relation(fields: [instrumentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   /// Links to the investmentPlans table for the associated plan
-  investmentPlans investmentPlans? @relation(fields: [planId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  investmentPlans investmentPlans? @relation(fields: [investmentPlanId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("transactions")
 }

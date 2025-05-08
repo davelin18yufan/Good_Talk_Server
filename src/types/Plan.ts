@@ -1,6 +1,10 @@
+import { PlanType, StopType } from "./Transaction"
+
+export type PlanStatus = "EXECUTED" | "PENDING" | "EXPIRED"
+
 export interface CreateInvestmentPlanDto {
-  instrumentId: string
-  tradeType: string
+  symbol: string
+  tradeType: PlanType // "多單" or "空單"
   operation: string
   entryPrice: number
   targetPrice: number
@@ -9,7 +13,8 @@ export interface CreateInvestmentPlanDto {
   startDate: string
   endDate: string
   comment?: string
-  status: string
+  status: PlanStatus
+  stopType: StopType // "停損" or "停利"
 }
 
 export type UpdateInvestmentPlanDto = Partial<CreateInvestmentPlanDto>

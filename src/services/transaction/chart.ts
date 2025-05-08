@@ -421,31 +421,39 @@ export async function calculateTradePlan(
   const plans = await prisma.investmentPlans.findMany({
     where: { userId },
     include: { instruments: { select: { symbol: true, name: true } } },
-    orderBy: { startDate: "desc" },
+    orderBy: { createdAt: "desc" },
     take: 10,
   })
+  
 
-  return plans.map((plan) => ({
-    id: plan.id,
-    type: plan.tradeType,
-    target: {
-      symbol: plan.instruments?.symbol || "",
-      name: plan.instruments?.name || "",
-    },
-    action: plan.operation,
-    entryPrice: plan.entryPrice?.toNumber() || 0,
-    targetPrice: plan.targetPrice?.toNumber() || 0,
-    stop: {
-      type: plan.stopPrice ? "停損" : "停利",
-      price: plan.stopPrice?.toNumber() || 0,
-    },
-    expectation:
-      plan.targetPrice && plan.stopPrice
-        ? plan.targetPrice.toNumber() / plan.stopPrice.toNumber()
-        : 0,
-    isExecuted: plan.status === "EXECUTED",
-    comment: plan.comment,
-  }))
+  return plans.map((plan) => {
+    const targetProfit = plan.targetPrice
+      ? plan.targetPrice.toNumber() - (plan.entryPrice?.toNumber() || 0)
+      : null;
+    const expectation = plan.targetPrice
+      ? ((targetProfit || 0) / (plan.entryPrice?.toNumber() || 1)) * 100
+      : null
+
+    return {
+      id: plan.id,
+      type: plan.tradeType,
+      target: {
+        symbol: plan.instruments?.symbol,
+        name: plan.instruments?.name,
+      },
+      action: plan.operation,
+      entryPrice: plan.entryPrice?.toNumber(),
+      targetPrice: plan.targetPrice?.toNumber(),
+      stop: {
+        type: plan.stopType,
+        price: plan.stopPrice?.toNumber(),
+      },
+      expectation,
+      isExecuted: plan.status === "EXECUTED",
+      comment: plan.comment,
+      targetProfit,
+    };
+  });
 }
 
 export async function calculateGoalProgress(
