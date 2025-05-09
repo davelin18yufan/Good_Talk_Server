@@ -7,7 +7,9 @@
   "scripts": {
     "start": "node dist/server.js",
     "dev": "tsx watch src/index.ts",
-    "build": "node esbuild.config.js",
+    "build": "tsc --noEmit && tsc esbuild.config.ts --outDir . && node esbuild.config.js",
+    "build:prod": "NODE_ENV=production tsc --noEmit && tsx esbuild.config.ts",
+    "build:watch": "tsx esbuild.config.ts --watch",
     "test:dev": "jest",
     "test:coverage": "jest --coverage",
     "test:watch": "jest --watch",

@@ -1,3 +1,14 @@
+# Ignore macOS Finder files
+.DS_Store
+
 node_modules
 # Keep environment variables out of version control
 .env
+
+tsconfig.tsbuildinfo
+# Ignore build output
+dist
+# Ignore coverage output
+coverage
+# Ignore log files
+*.log
