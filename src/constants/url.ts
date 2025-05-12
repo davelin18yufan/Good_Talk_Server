@@ -1,2 +1,2 @@
 //* Prefix Global route *//
-export const PREFIX_ROUTE = `/api/v1`;
+export const PREFIX_ROUTE = `/api/v1`

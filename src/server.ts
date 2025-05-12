@@ -3,7 +3,8 @@ import morgan from "morgan"
 import cors from "cors"
 
 import { router } from "@/routes"
-import { AppError, ErrorInternal } from "./middlewares/ErrorInternal"
+import type { AppError } from "./middlewares/ErrorInternal"
+import { ErrorInternal } from "./middlewares/ErrorInternal"
 
 const app = express()
 
@@ -20,14 +21,21 @@ app.use(morgan("dev"))
 // Routes
 app.use(router)
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK' });
-});
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "OK" })
+})
 
 // Error handling
 
-app.use((err: AppError, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  ErrorInternal(err, req, res, next);
-});
+app.use(
+  (
+    err: AppError,
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) => {
+    ErrorInternal(err, req, res, next)
+  }
+)
 
 export { app }

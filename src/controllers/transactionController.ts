@@ -1,8 +1,8 @@
-import { Response } from "express"
-import { AuthenticatedRequest } from "@/types/Auth"
+import type { Response } from "express"
+import type { AuthenticatedRequest } from "@/types/Auth"
 import * as transactionServices from "../services/transaction/trade"
 import { sendErrorResponse } from "@/helpers"
-import {
+import type {
   CreateTransactionDto,
   UpdateTransactionDto,
 } from "@/types/Transaction"
@@ -42,11 +42,11 @@ export const getTransactionById = async (
     if (!userId) throw new Error("Unauthorized")
 
     const transaction = await transactionServices.getTransactionById(id, userId)
-    if (!transaction){
+    if (!transaction) {
       res.status(404).json({ message: "Transaction not found" })
-      return 
+      return
     }
-    
+
     res.status(200).json(transaction)
   } catch (error) {
     sendErrorResponse(res, 500, "Error fetching transaction", error)
@@ -127,12 +127,10 @@ export const uploadTransactions = async (
       data,
       userId
     )
-    res
-      .status(201)
-      .json({
-        message: "Transactions imported successfully",
-        count: results.length,
-      })
+    res.status(201).json({
+      message: "Transactions imported successfully",
+      count: results.length,
+    })
   } catch (error) {
     sendErrorResponse(res, 500, "Error importing transactions", error)
   }

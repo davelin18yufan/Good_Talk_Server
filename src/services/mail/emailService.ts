@@ -10,7 +10,11 @@ const resend = new Resend(RESEND_API_KEY!)
  * @param resetLink - link with reset token.
  * @param username - Receiver name.
  */
-export const sendResetEmail = async (to: string, username:string, resetLink: string) => {
+export const sendResetEmail = async (
+  to: string,
+  username: string,
+  resetLink: string
+) => {
   try {
     const html = generateResetEmailTemplate(resetLink, username)
     await resend.emails.send({

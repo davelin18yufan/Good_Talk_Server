@@ -1,4 +1,4 @@
-import { Response } from "express"
+import type { Response } from "express"
 import { type AuthenticatedRequest } from "@/types"
 import * as articleServices from "../services/article"
 import {
@@ -51,15 +51,8 @@ export const getPopularArticles = async (
   res: Response
 ) => {
   try {
-    const {
-      tagName,
-      limit,
-      offset,
-      startDate,
-      endDate,
-      minViews,
-      maxViews,
-    } = req.query
+    const { tagName, limit, offset, startDate, endDate, minViews, maxViews } =
+      req.query
     const params: GetArticlesDto = {
       tagName: tagName as string,
       limit: limit ? parseInt(limit as unknown as string) : 10,
@@ -143,7 +136,7 @@ export const createArticle = async (
 ) => {
   try {
     const data = req.body
-    
+
     if (req.user?.id) {
       data.userId = req.user.id // author id
     }
@@ -180,6 +173,6 @@ export const deleteArticle = async (
     await articleServices.deleteArticle(id)
     res.status(200).json({ message: "Article deleted successfully" })
   } catch (error) {
-    sendErrorResponse(res, 500, "Error deleting article", error) 
+    sendErrorResponse(res, 500, "Error deleting article", error)
   }
 }

@@ -31,10 +31,7 @@ const validateTag = [
       }
       return true
     }),
-  body("description")
-    .optional()
-    .isString()
-    .withMessage("內容必須是字串"),
+  body("description").optional().isString().withMessage("內容必須是字串"),
   body("iconUrl")
     .optional()
     .isURL()

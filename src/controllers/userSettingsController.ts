@@ -1,5 +1,5 @@
-import { Request, Response } from "express"
-import {
+import type { Request, Response } from "express"
+import type {
   AuthenticatedRequest,
   CreateUserSettingsDto,
   UpdateDashboardLayoutDto,

@@ -1,10 +1,10 @@
 import { prisma } from "@/database"
 import { fetchMarketPrice, getPositionCurrentPrices } from "@/helpers/fugle"
-import { CurrentPrices } from "@/types/Fugle"
-import { GenericChartData } from "@/types/Transaction"
+import type { CurrentPrices } from "@/types/Fugle"
+import type { GenericChartData } from "@/types/Transaction"
 
 export async function calculateProfitChart(
-  userId: string,
+  userId: string
 ): Promise<GenericChartData> {
   const transactions = await prisma.transactions.findMany({
     where: { userId },
@@ -126,7 +126,7 @@ export async function calculateProfitChart(
 }
 
 export async function calculateRealizedPnlChart(
-  userId: string,
+  userId: string
 ): Promise<GenericChartData> {
   const transactions = await prisma.transactions.findMany({
     where: { userId },
@@ -199,7 +199,7 @@ export async function calculateRealizedPnlChart(
 }
 
 export async function calculateTradeFundBase(
-  userId: string,
+  userId: string
 ): Promise<GenericChartData> {
   const transactions = await prisma.transactions.findMany({
     where: { userId },
@@ -283,7 +283,7 @@ export async function calculateTradeFundBase(
 }
 
 export async function calculateTradeSummary(
-  userId: string,
+  userId: string
 ): Promise<GenericChartData> {
   const transactions = await prisma.transactions.findMany({
     where: { userId },
@@ -385,7 +385,7 @@ export async function calculateTradeSummary(
 }
 
 export async function calculateTradeLog(
-  userId: string,
+  userId: string
 ): Promise<GenericChartData> {
   const transactions = await prisma.transactions.findMany({
     where: { userId },
@@ -416,7 +416,7 @@ export async function calculateTradeLog(
 }
 
 export async function calculateTradePlan(
-  userId: string,
+  userId: string
 ): Promise<GenericChartData> {
   const plans = await prisma.investmentPlans.findMany({
     where: { userId },
@@ -424,12 +424,11 @@ export async function calculateTradePlan(
     orderBy: { createdAt: "desc" },
     take: 10,
   })
-  
 
   return plans.map((plan) => {
     const targetProfit = plan.targetPrice
       ? plan.targetPrice.toNumber() - (plan.entryPrice?.toNumber() || 0)
-      : null;
+      : null
     const expectation = plan.targetPrice
       ? ((targetProfit || 0) / (plan.entryPrice?.toNumber() || 1)) * 100
       : null
@@ -452,8 +451,8 @@ export async function calculateTradePlan(
       isExecuted: plan.status === "EXECUTED",
       comment: plan.comment,
       targetProfit,
-    };
-  });
+    }
+  })
 }
 
 export async function calculateGoalProgress(

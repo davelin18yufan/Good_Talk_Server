@@ -1,4 +1,4 @@
-import { transactions } from "@prisma/client"
+import type { transactions } from "@prisma/client"
 import { prisma } from "@/database"
 import { recalculatePerformance } from "./performance"
 import {

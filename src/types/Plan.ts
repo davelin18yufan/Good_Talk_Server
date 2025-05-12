@@ -1,4 +1,4 @@
-import { PlanType, StopType } from "./Transaction"
+import type { PlanType, StopType } from "./Transaction"
 
 export type PlanStatus = "EXECUTED" | "PENDING" | "EXPIRED"
 
@@ -24,4 +24,3 @@ export interface GetInvestmentPlansDto {
   limit?: number
   offset?: number
 }
-

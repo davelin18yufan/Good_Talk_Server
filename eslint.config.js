@@ -2,7 +2,7 @@ import js from "@eslint/js"
 import tseslint from "typescript-eslint"
 import prettierPlugin from "eslint-plugin-prettier"
 import importPlugin from "eslint-plugin-import"
-import { fileURLToPath } from "node:url"
+import { fileURLToPath, URL } from "node:url"
 import { includeIgnoreFile } from "@eslint/compat"
 
 const gitignorePath = fileURLToPath(new URL("./.gitignore", import.meta.url))
@@ -56,6 +56,7 @@ export default [
       "@typescript-eslint/no-unsafe-argument": "off",
       "@typescript-eslint/only-throw-error": "off",
       "@typescript-eslint/explicit-function-return-type": "off",
+      "@typescript-eslint/no-empty-object-type": "off",
       "@typescript-eslint/no-unused-vars": [
         "warn",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },

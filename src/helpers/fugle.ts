@@ -1,10 +1,8 @@
 // utils/marketData.ts
-import axios, { AxiosError, AxiosInstance } from "axios"
-import {
-  FugleSnapshotQuotesResponse,
-  CurrentPrices,
-  CurrentPricesItem,
-} from "@/types/Fugle"
+import type { AxiosInstance } from "axios"
+import axios, { AxiosError } from "axios"
+import type { FugleSnapshotQuotesResponse, CurrentPrices } from "@/types/Fugle"
+import { CurrentPricesItem } from "@/types/Fugle"
 
 const BASE_URL = "https://api.fugle.tw/marketdata/v1.0/stock"
 const API_KEY = process.env.FUGLE_API_KEY!

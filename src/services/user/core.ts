@@ -1,7 +1,15 @@
-import { CreateUserDto, UpdateUserDto } from "@/types"
+import type { CreateUserDto, UpdateUserDto } from "@/types"
 import { prisma } from "@/database"
 
-export const getAllUsers = async () => {
+export const getAllUsers = async (): Promise<
+  {
+    id: string
+    username: string
+    email: string
+    createdAt: Date | null
+    updatedAt: Date | null
+  }[]
+> => {
   return await prisma.users.findMany({
     select: {
       id: true,
@@ -30,7 +38,6 @@ export const getUserById = async (id: string) => {
       holdings: {
         include: {
           users: true,
-          
         },
       },
       userTagPreferences: true,

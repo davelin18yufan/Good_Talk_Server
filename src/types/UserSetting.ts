@@ -1,9 +1,9 @@
-import { BREAKPOINTS } from "@/constants/charts"
-import { Prisma } from "@prisma/client"
+import type { BREAKPOINTS } from "@/constants/charts"
+import type { Prisma } from "@prisma/client"
 
 // user create DTO
 export interface CreateUserSettingsDto {
-  userId: string 
+  userId: string
   initialCapital: Prisma.Decimal | number // 接受 number（Prisma 會轉為 Decimal）
   leverageRatio: Prisma.Decimal | number
   currentCapital?: Prisma.Decimal | number
@@ -11,7 +11,7 @@ export interface CreateUserSettingsDto {
   dashboardLayout?: {
     dashboardLayout: ResponsiveLayouts
     toolbox: ResponsiveLayouts
-  } 
+  }
   riskTolerance: Prisma.Decimal | number
   avatarUrl?: string
   profileVideoId?: string

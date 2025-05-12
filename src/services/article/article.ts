@@ -1,4 +1,5 @@
-import { PrismaClient, articles } from "@prisma/client"
+import type { articles } from "@prisma/client"
+import { PrismaClient } from "@prisma/client"
 import {
   type CreateArticleDto,
   type UpdateArticleDto,
@@ -160,7 +161,6 @@ export const getUserArticles = async (
   })
 }
 
-
 export const getArticleById = async (id: string): Promise<articles | null> => {
   return prisma.articles.findUnique({
     where: { id },
@@ -175,7 +175,7 @@ export const getArticleById = async (id: string): Promise<articles | null> => {
       articleTags: {
         include: {
           tags: {
-            include: { tagCategories: true }, 
+            include: { tagCategories: true },
           },
         },
       },
@@ -264,7 +264,8 @@ export const updateArticle = async (
       articleTags: tagIds
         ? {
             deleteMany: {}, // delete current tags
-            create: tagIds.map((tagId) => ({ // then add new
+            create: tagIds.map((tagId) => ({
+              // then add new
               tagId,
             })),
           }

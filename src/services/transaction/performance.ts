@@ -4,8 +4,8 @@ import {
   DEFAULT_LAYOUTS,
   DEFAULT_TOOLBOX,
 } from "@/constants/charts"
-import { ResponsiveLayouts, GridItem } from "@/types"
-import { ChartData } from "@/types/Transaction"
+import type { ResponsiveLayouts, GridItem } from "@/types"
+import type { ChartData } from "@/types/Transaction"
 
 export async function recalculatePerformance(
   userId: string

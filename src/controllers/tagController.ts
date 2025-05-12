@@ -1,7 +1,7 @@
-import { Response } from "express"
-import { AuthenticatedRequest } from "@/types/Auth"
+import type { Response } from "express"
+import type { AuthenticatedRequest } from "@/types/Auth"
 import * as tagServices from "../services/tag"
-import {
+import type {
   GetTagsDto,
   CreateTagDto,
   UpdateTagDto,
@@ -36,7 +36,7 @@ export const getTags = async (
       includeArticles: safeParseBoolean(includeArticles),
       includeCategories: safeParseBoolean(includeCategories),
     }
-    
+
     const tags = await tagServices.getTags(params, options)
 
     res.status(200).json(tags)

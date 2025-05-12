@@ -1,5 +1,5 @@
-import { Request } from "express"
-import { IMessages } from "./Base"
+import type { Request } from "express"
+import type { IMessages } from "./Base"
 
 /**
  * Extended Request interface to include authenticated user information.
@@ -15,7 +15,7 @@ import { IMessages } from "./Base"
 export interface AuthenticatedRequest<
   P = any, // router
   B = any, // request
-  Q = any // params
+  Q = any, // params
 > extends Request<P, any, B, Q> {
   user?: {
     id: string

@@ -48,8 +48,8 @@ export const bundleConfig = ({
   bundle: true,
   platform: "node",
   target: "node22",
-  format: "cjs", 
-  sourcemap: "external", 
+  format: "cjs",
+  sourcemap: "external",
   minify: true, // Enable minification for production
   tsconfig: "tsconfig.json",
   external: ["pg-native", "@prisma/client"],

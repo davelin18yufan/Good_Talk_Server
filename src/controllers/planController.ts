@@ -1,10 +1,10 @@
-import { Response } from "express"
+import type { Response } from "express"
 import * as planService from "../services/transaction/plan"
-import {
+import type {
   CreateInvestmentPlanDto,
   UpdateInvestmentPlanDto,
 } from "@/types/Plan"
-import { AuthenticatedRequest } from "@/types/Auth"
+import type { AuthenticatedRequest } from "@/types/Auth"
 import { sendErrorResponse } from "../helpers"
 
 export const getUserPlans = async (

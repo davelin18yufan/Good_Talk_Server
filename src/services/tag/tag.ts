@@ -1,5 +1,6 @@
-import { PrismaClient, tags } from "@prisma/client"
-import {
+import type { tags } from "@prisma/client"
+import { PrismaClient } from "@prisma/client"
+import type {
   GetTagsDto,
   CreateTagDto,
   UpdateTagDto,
@@ -10,7 +11,7 @@ const prisma = new PrismaClient()
 
 export const getTags = async (
   params: GetTagsDto = {}, // default to search all
-  options: GetTagOptions = {} 
+  options: GetTagOptions = {}
 ): Promise<tags[]> => {
   const { name, categoryName, limit = 10, offset = 0 } = params
   const {

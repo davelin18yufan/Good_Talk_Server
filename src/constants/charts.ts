@@ -1,6 +1,6 @@
 import * as chartHandlers from "@/services/transaction/chart"
-import { ResponsiveLayouts } from "@/types"
-import { ChartId, ChartHandler } from "@/types/Transaction"
+import type { ResponsiveLayouts } from "@/types"
+import type { ChartId, ChartHandler } from "@/types/Transaction"
 
 export const SUPPORTED_CHARTS = [
   "ProfitChart",
@@ -10,7 +10,7 @@ export const SUPPORTED_CHARTS = [
   "TradeLog",
   "TradePlan",
   "GoalProgress",
-  "PortfolioAllocationChart"
+  "PortfolioAllocationChart",
 ] as const
 
 // Chart handlers for each chart type

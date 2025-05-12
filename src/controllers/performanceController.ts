@@ -1,6 +1,6 @@
-import { Request, Response } from "express"
+import type { Request, Response } from "express"
 import { recalculatePerformance } from "../services/transaction/performance"
-import { ChartData } from "@/types/Transaction"
+import type { ChartData } from "@/types/Transaction"
 import { sendErrorResponse } from "@/helpers"
 
 // Get performance data for a user
