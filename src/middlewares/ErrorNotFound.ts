@@ -1,10 +1,6 @@
-import type { Request, Response, NextFunction } from "express"
+import type { Response } from "express"
 
-export const ErrorNotFound = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void => {
+export const ErrorNotFound = (res: Response): void => {
   res.status(404).json({
     status: "error",
     message: "Not Found!",

@@ -28,7 +28,10 @@ export default [
     },
     settings: {
       "import/resolver": {
-        typescript: {},
+        typescript: {
+          alwaysTryTypes: true,
+          project: "./tsconfig.json",
+        },
       },
     },
     rules: {
@@ -38,19 +41,18 @@ export default [
         "error",
         { semi: false, endOfLine: "auto", trailingComma: "es5" },
       ],
-      // "import/named": "error",
-      // "import/namespace": "error",
-      // "import/default": "error",
-      // "import/export": "error",
-      // "import/first": "error",
-      // "import/exports-last": "error",
-      // "import/no-duplicates": "error",
-      // "import/no-named-as-default": "error",
-      // "import/no-named-as-default-member": "error",
-      // "import/no-unresolved": [
-      //   "error",
-      //   { commonjs: true, caseSensitive: true },
-      // ],
+      // "import/named": "error", // 尚未支援 flat config
+      "import/namespace": "error",
+      "import/default": "error",
+      "import/export": "error",
+      "import/first": "error",
+      "import/no-duplicates": "error",
+      "import/no-named-as-default": "error",
+      "import/no-named-as-default-member": "error",
+      "import/no-unresolved": [
+        "error",
+        { commonjs: true, caseSensitive: true },
+      ],
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unsafe-assignment": "off",
       "@typescript-eslint/no-unsafe-argument": "off",

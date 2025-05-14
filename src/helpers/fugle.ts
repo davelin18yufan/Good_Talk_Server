@@ -1,8 +1,6 @@
-// utils/marketData.ts
 import type { AxiosInstance } from "axios"
-import axios, { AxiosError } from "axios"
+import axios from "axios"
 import type { FugleSnapshotQuotesResponse, CurrentPrices } from "@/types/Fugle"
-import { CurrentPricesItem } from "@/types/Fugle"
 
 const BASE_URL = "https://api.fugle.tw/marketdata/v1.0/stock"
 const API_KEY = process.env.FUGLE_API_KEY!
@@ -40,7 +38,8 @@ export async function fetchMarketPrice(symbol: string): Promise<number> {
 
   try {
     const response = await fugleClient.get<FugleSnapshotQuotesResponse>(
-      `/snapshot/quotes?symbols=${symbol}`
+      `/snapshot/quotes?symbols=${symbol}`,
+      { headers }
     )
     const quote = response.data.data[0]
     if (!quote) {

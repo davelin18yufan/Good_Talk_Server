@@ -1,5 +1,5 @@
-import { type userSettings } from "@prisma/client"
-import { type CreateUserSettingsDto, type UpdateUserSettingsDto } from "@/types"
+import type { userSettings } from "@prisma/client"
+import type { CreateUserSettingsDto, UpdateUserSettingsDto } from "@/types"
 import { prisma } from "@/database"
 import { DEFAULT_LAYOUTS, DEFAULT_TOOLBOX } from "@/constants/charts"
 

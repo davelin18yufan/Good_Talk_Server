@@ -260,6 +260,7 @@ export async function calculateTradeFundBase(
     .map((holding) => holding.symbol)
   const currentPrices: CurrentPrices = await getPositionCurrentPrices(symbols)
 
+  // eslint-disable-next-line
   for (const [instrumentId, holding] of Object.entries(holdingsMap)) {
     if (holding.quantity > 0) {
       const currentPriceObj = currentPrices.find(

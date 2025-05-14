@@ -1,8 +1,10 @@
 import type { Response } from "express"
-import { Request } from "express"
 import * as userService from "../services/user/core"
-import type { CreateUserDto, UpdateUserDto } from "../types"
-import type { AuthenticatedRequest } from "../types"
+import type {
+  CreateUserDto,
+  UpdateUserDto,
+  AuthenticatedRequest,
+} from "../types"
 import bcrypt from "bcryptjs"
 import { SALT } from "../constants/config"
 import { sendErrorResponse } from "@/helpers"

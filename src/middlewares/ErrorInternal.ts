@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction } from "express"
+import type { Response } from "express"
 
 export class AppError extends Error {
   status: number
@@ -10,12 +10,7 @@ export class AppError extends Error {
   }
 }
 
-export const ErrorInternal = (
-  err: AppError,
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void => {
+export const ErrorInternal = (err: AppError, res: Response): void => {
   console.error(err.stack)
 
   const status = err.status || 500
