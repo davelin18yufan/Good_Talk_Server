@@ -3,7 +3,13 @@ import { body, param } from "express-validator"
 import { validate as uuidValidate } from "uuid"
 
 import { asyncHandler, auth } from "../middlewares"
-import { getAllUsers, getUserById, createUser, deleteUser, updateUser } from "../controllers/userController"
+import {
+  getAllUsers,
+  getUserById,
+  createUser,
+  deleteUser,
+  updateUser,
+} from "../controllers/userController"
 
 const router = Router()
 
@@ -16,11 +22,11 @@ const validateUser = [
 // Validate uuid for request
 const validateUUID = [
   param("id").custom((value) => {
-    if(!uuidValidate(value)) {
+    if (!uuidValidate(value)) {
       throw new Error("Invalid UUID")
     }
     return true
-  })
+  }),
 ]
 
 //* Protect all user routes with authentication

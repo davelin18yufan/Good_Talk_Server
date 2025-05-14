@@ -1,7 +1,7 @@
 import { prisma } from "@/database"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
-import {
+import type {
   RegisterRequestDto,
   LoginResponseDto,
   RegisterResponseDto,
@@ -198,7 +198,7 @@ export const requestPasswordReset = async ({
 
     // send email
     const resetLink = `${FRONTEND_URL}/reset-password?token=${resetToken}`
-    await sendResetEmail(user.email, resetLink)
+    await sendResetEmail(user.email, user.username, resetLink)
 
     return {
       success: true,

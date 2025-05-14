@@ -4,7 +4,7 @@ import { FRONTEND_URL } from "@/constants/config"
  * reset password email template
  * @param resetLink - link to reset page
  * @param username - user name
- * @returns 
+ * @returns
  */
 export const generateResetEmailTemplate = (
   resetLink: string,

@@ -1,5 +1,5 @@
-import { Response } from "express"
-import {
+import type { Response } from "express"
+import type {
   AuthenticatedRequest,
   RegisterRequestDto,
   LoginRequestDto,
@@ -113,10 +113,10 @@ export const resetPassword = async (
   try {
     const { token, newPassword, confirmPassword } = req.body
 
-    if(newPassword !== confirmPassword){
+    if (newPassword !== confirmPassword) {
       res.status(400).json({
         success: false,
-        message: "Two password are not matched."
+        message: "Two password are not matched.",
       })
     }
 
@@ -140,7 +140,8 @@ export const resetPassword = async (
     sendErrorResponse(
       res,
       500,
-      "An error occurred while resetting your password", error
+      "An error occurred while resetting your password",
+      error
     )
   }
 }

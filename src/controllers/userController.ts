@@ -1,15 +1,15 @@
-import { Request, Response } from "express"
+import type { Response } from "express"
 import * as userService from "../services/user/core"
-import { CreateUserDto, UpdateUserDto } from "../types"
-import { AuthenticatedRequest } from "../types"
+import type {
+  CreateUserDto,
+  UpdateUserDto,
+  AuthenticatedRequest,
+} from "../types"
 import bcrypt from "bcryptjs"
 import { SALT } from "../constants/config"
 import { sendErrorResponse } from "@/helpers"
 
-export const getAllUsers = async (
-  req: AuthenticatedRequest,
-  res: Response
-) => {
+export const getAllUsers = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const users = await userService.getAllUsers()
 
@@ -22,10 +22,9 @@ export const getAllUsers = async (
 export const getUserById = async (
   req: AuthenticatedRequest<{ id: string }>,
   res: Response
-) => {
+): Promise<void> => {
   try {
     const { id } = req.params
-    console.log(id)
     const user = await userService.getUserById(id)
 
     if (!user) {
@@ -69,10 +68,7 @@ export const updateUser = async (
   }
 }
 
-export const deleteUser = async (
-  req: AuthenticatedRequest,
-  res: Response
-) => {
+export const deleteUser = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params
     await userService.deleteUser(id)

@@ -1,6 +1,6 @@
-import { Request, Response, NextFunction } from "express"
+import type { Response, NextFunction } from "express"
 import jwt from "jsonwebtoken"
-import { AuthenticatedRequest } from "../types"
+import type { AuthenticatedRequest } from "../types"
 import { AppError } from "./ErrorInternal"
 import { validate as uuidValidate } from "uuid"
 import { JWT_SECRET } from "../constants/config"
@@ -101,9 +101,9 @@ export const auth = async (
 //       next();
 //     } catch (error) {
 //       if (error instanceof AppError) {
-//         res.status(error.status).json({ 
+//         res.status(error.status).json({
 //           status: 'error',
-//           message: error.message 
+//           message: error.message
 //         });
 //       } else {
 //         next(error);
@@ -111,3 +111,12 @@ export const auth = async (
 //     }
 //   };
 // };
+
+// const authorizeRole = (role) => {
+//   return (req, res, next) => {
+//     if (req.user.role !== role) {
+//       return res.status(403).json({ message: "Forbidden" })
+//     }
+//     next()
+//   }
+// }
