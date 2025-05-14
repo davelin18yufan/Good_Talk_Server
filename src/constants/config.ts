@@ -8,8 +8,15 @@ export const { PORT_APP, HOST_APP, NODE_ENV } = process.env
 export const DATABASE_PREFIX = `"${process.env.DATABASE_PREFIX}"` || "GoodTalk"
 
 // Frontend
-export const FRONTEND_URL = "http://localhost:3000"
-export const BACKEND_URL = "http://localhost:5137"
+export const FRONTEND_URL =
+  NODE_ENV === "production"
+    ? process.env.FRONTEND_URL_PROD
+    : "http://localhost:3000"
+
+export const BACKEND_URL =
+  NODE_ENV === "production"
+    ? process.env.BACKEND_URL_PROD
+    : "http://localhost:5137"
 
 // Auth
 export const JWT_SECRET = process.env.JWT_SECRET || "secret"

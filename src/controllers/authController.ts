@@ -85,6 +85,7 @@ export const requestReset = async (
       return
     }
 
+    // Will send an email with the reset link here
     await authService.requestPasswordReset({ email })
 
     // Always return 200 even if user doesn't exist (security best practice)
@@ -93,10 +94,6 @@ export const requestReset = async (
       message:
         "If your email exists in our system, you will receive a password reset link",
     })
-
-    //? In production, send an email with the reset link here
-    //? The reset link would contain the token returned from requestPasswordReset
-    //? But don't include the actual token in the API response
   } catch (error) {
     console.error("Password reset request error:", error)
     sendErrorResponse(res, 500, "Error during registration", error)

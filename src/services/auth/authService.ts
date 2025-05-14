@@ -19,8 +19,9 @@ import {
   RESET_TOKEN_EXPIRY,
   FRONTEND_URL,
 } from "@/constants/config"
-import { sendResetEmail } from "../mail/emailService"
+import { sendEmail } from "../mail/emailService"
 import crypto from "node:crypto"
+import { generateResetEmailTemplate } from "@/helpers"
 
 export const registerUser = async (
   body: RegisterRequestDto
@@ -196,9 +197,12 @@ export const requestPasswordReset = async ({
       },
     })
 
-    // send email
+    // send reset email
     const resetLink = `${FRONTEND_URL}/reset-password?token=${resetToken}`
-    await sendResetEmail(user.email, user.username, resetLink)
+    await sendEmail(
+      user.email,
+      generateResetEmailTemplate(resetLink, user.username)
+    )
 
     return {
       success: true,
