@@ -25,6 +25,7 @@ export const LOCKOUT_DURATION = 30 * 60 * 1000 // 30 min.
 export const SALT = process.env.SALT || 10
 export const RESET_TOKEN_EXPIRY = 3600000 // 1 hour in milliseconds
 
-// Email
-export const EMAIL_SENDER = process.env.EMAIL_SENDER || "davelin30630@gmail.com"
+//TODO: Email server has to be set up
+export const EMAIL_SERVER_DOMAIN =
+  process.env.EMAIL_SENDER || "davelin30630@gmail.com"
 export const RESEND_API_KEY = process.env.RESEND_API_KEY

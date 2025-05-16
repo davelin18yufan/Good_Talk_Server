@@ -63,3 +63,21 @@ export async function recalculatePerformance(
 
   return result
 }
+
+// Calculate the user interaction with web
+export async function recalculatePerformanceWeb(
+  userId: string
+): Promise<ChartData> {
+  const result: ChartData = {}
+  const handler = CHART_HANDLERS["web" as keyof typeof CHART_HANDLERS]
+  if (handler) {
+    try {
+      result["web"] = await handler(userId, prisma)
+    } catch (error) {
+      console.error(`Error computing web:`, error)
+      result["web"] = []
+    }
+  }
+
+  return result
+}

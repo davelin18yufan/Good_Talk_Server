@@ -38,18 +38,37 @@ export const registerUser = async (
     //* 2. encrypt password
     const hashedPassword = await bcrypt.hash(body.password, +SALT)
 
-    //* 3. create user
+    //* 3. generate email verification token
+    const verificationToken = crypto.randomBytes(32).toString("hex")
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(verificationToken)
+      .digest("hex")
+
+    const expiryDate = new Date(Date.now() + 1000 * 60 * 60 * 2) // 2 hours
+
+    //* 4. create user
     const user = await prisma.users.create({
       data: {
         username: body.username,
         email: body.email,
         passwordHash: hashedPassword,
+        emailVerificationToken: hashedToken,
+        emailVerificationTokenExpiry: expiryDate,
       },
     })
 
     //* 4. JWT token generate
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, {
       expiresIn: "2h", // token effective time
+    })
+
+    //* 5. prepare verification link and send email
+    const verifyUrl = `${FRONTEND_URL}/verify-email?token=${verificationToken}`
+    await sendEmail({
+      to: [user.email],
+      subject: "【Good Talk】帳號驗證啟用信",
+      content: generateResetEmailTemplate(verifyUrl, user.username),
     })
 
     return {
@@ -70,12 +89,59 @@ export const registerUser = async (
   }
 }
 
+export const verifyUserEmail = async (
+  token: string
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    // Hash the provided token to compare with stored hash
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex")
+
+    // Find user with this verification token that hasn't expired
+    const user = await prisma.users.findFirst({
+      where: {
+        emailVerificationToken: hashedToken,
+        emailVerificationTokenExpiry: {
+          gt: new Date(), // greater than
+        },
+      },
+    })
+
+    if (!user) {
+      return {
+        success: false,
+        message: "Invalid or expired email verification token",
+      }
+    }
+
+    // Update user to mark email as verified and clear the token fields
+    await prisma.users.update({
+      where: { id: user.id },
+      data: {
+        isEmailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationTokenExpiry: null,
+      },
+    })
+
+    return {
+      success: true,
+      message: "Email verified successfully",
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error("Error verifying email: " + error.message)
+    } else {
+      throw new Error("Error verifying email")
+    }
+  }
+}
+
 export const loginUser = async ({
   email,
   password,
 }: LoginRequestDto): Promise<LoginResponseDto> => {
   try {
-    //* 1. check if user exists
+    //* 1. check if user exists and email is valid
     const user = await prisma.users.findUnique({
       where: { email },
     })
@@ -83,6 +149,14 @@ export const loginUser = async ({
     if (!user) {
       // if account not found, simply return.
       return { success: false, message: "User not found" }
+    }
+
+    // check if user is verified
+    if (!user.isEmailVerified) {
+      return {
+        success: false,
+        message: "Please verify your email before logging in.",
+      }
     }
 
     //* 2. if user exists
@@ -199,10 +273,11 @@ export const requestPasswordReset = async ({
 
     // send reset email
     const resetLink = `${FRONTEND_URL}/reset-password?token=${resetToken}`
-    await sendEmail(
-      user.email,
-      generateResetEmailTemplate(resetLink, user.username)
-    )
+    await sendEmail({
+      to: [user.email],
+      subject: "Password Reset Request",
+      content: generateResetEmailTemplate(resetLink, user.username),
+    })
 
     return {
       success: true,

@@ -83,12 +83,10 @@ export const changePassword = async (
   res: Response
 ) => {
   try {
-    const { password, email, username } = req.body
+    const { password, email } = req.body
 
     const salt = await bcrypt.genSalt(+SALT)
     const hashedPassword = await bcrypt.hash(password, salt)
-
-    // TODO: Add email verification
 
     await userService.changePassword(email, hashedPassword)
 
