@@ -284,6 +284,7 @@ model users {
   updatedAt          DateTime?            @default(now()) @map("updated_at") @db.Timestamptz(6)
   lastFailedLogin    DateTime?            @map("last_failed_login") @db.Timestamptz(6)
   loginAttempts      Int                  @default(0) @map("login_attempts")
+  isEmailVerified    Boolean              @map("is_email_verified") @default(false)
   articles           articles[]
   holdings           holdings[]
   investmentPlans    investmentPlans[]
@@ -298,8 +299,10 @@ model users {
   userTagPreferences userTagPreferences[]
   yearlyPerformance  yearlyPerformance[]
   userGoals          userGoals[]
-  resetToken        String?               @map("reset_token")
-  resetTokenExpiry  DateTime?             @map("reset_token_expiry") @db.Timestamptz(6)
+  resetToken         String?               @map("reset_token")
+  resetTokenExpiry   DateTime?             @map("reset_token_expiry") @db.Timestamptz(6)
+  emailVerificationToken  String?          @map("email_verification_token")
+  emailVerificationTokenExpiry   DateTime? @map("email_verification_token_expiry") @db.Timestamptz(6)
 
   @@map("users")
 }
