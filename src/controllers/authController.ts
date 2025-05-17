@@ -142,3 +142,61 @@ export const resetPassword = async (
     )
   }
 }
+
+export const verifyEmail = async (
+  req: AuthenticatedRequest<unknown, { email: string; token: string }>,
+  res: Response
+) => {
+  try {
+    const { email, token } = req.body
+
+    if (!email || !token) {
+      res.status(400).json({
+        success: false,
+        message: "Email and token are required.",
+      })
+      return
+    }
+
+    const result = await authService.verifyUserEmail({ email, token })
+
+    if (result.success) {
+      res.status(200).json(result)
+    } else {
+      res.status(400).json(result)
+    }
+  } catch (error) {
+    console.error("Email verification error:", error)
+    sendErrorResponse(res, 500, "Error during email verification", error)
+  }
+}
+
+export const resendVerificationEmail = async (
+  req: AuthenticatedRequest<unknown, { email: string }>,
+  res: Response
+) => {
+  try {
+    const { email } = req.body
+
+    if (!email) {
+      res.status(400).json({
+        success: false,
+        message: "Email is required",
+      })
+      return
+    }
+
+    // Will send an email with the reset link here
+    await authService.resendVerificationEmail({ email })
+
+    // Always return 200 even if user doesn't exist (security best practice)
+    res.status(200).json({
+      success: true,
+      message:
+        "If your email exists in our system, you will receive a verification link",
+    })
+  } catch (error) {
+    console.error("Resend verification email error:", error)
+    sendErrorResponse(res, 500, "Error during registration", error)
+  }
+}

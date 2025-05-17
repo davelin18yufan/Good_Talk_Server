@@ -89,16 +89,21 @@ export const registerUser = async (
   }
 }
 
-export const verifyUserEmail = async (
+export const verifyUserEmail = async ({
+  email,
+  token,
+}: {
+  email: string
   token: string
-): Promise<{ success: boolean; message: string }> => {
+}): Promise<{ success: boolean; message: string }> => {
   try {
     // Hash the provided token to compare with stored hash
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex")
 
-    // Find user with this verification token that hasn't expired
+    // Find user with email and check verification token that hasn't expired
     const user = await prisma.users.findFirst({
       where: {
+        email,
         emailVerificationToken: hashedToken,
         emailVerificationTokenExpiry: {
           gt: new Date(), // greater than
@@ -132,6 +137,73 @@ export const verifyUserEmail = async (
       throw new Error("Error verifying email: " + error.message)
     } else {
       throw new Error("Error verifying email")
+    }
+  }
+}
+
+export const resendVerificationEmail = async ({
+  email,
+}: {
+  email: string
+}): Promise<{ success: boolean; message: string }> => {
+  try {
+    // Find user with the provided email
+    const user = await prisma.users.findUnique({
+      where: { email },
+    })
+
+    if (!user) {
+      return {
+        success: false,
+        message: "User not found",
+      }
+    }
+
+    // Check if the email is already verified
+    if (user.isEmailVerified) {
+      return {
+        success: false,
+        message: "Email is already verified",
+      }
+    }
+
+    // Generate a new verification token
+    const verificationToken = crypto.randomBytes(32).toString("hex")
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(verificationToken)
+      .digest("hex")
+
+    // Set expiry time for the token
+    const expiryDate = new Date(Date.now() + 1000 * 60 * 60 * 2) // 2 hours
+
+    // Update user with the new token and expiry date
+    await prisma.users.update({
+      where: { id: user.id },
+      data: {
+        emailVerificationToken: hashedToken,
+        emailVerificationTokenExpiry: expiryDate,
+      },
+    })
+
+    // Prepare verification link and send email
+    const verifyUrl = `${FRONTEND_URL}/verify-email?token=${verificationToken}`
+    await sendEmail({
+      to: [user.email],
+      subject: "Resend Email Verification",
+      content: generateResetEmailTemplate(verifyUrl, user.username),
+    })
+
+    return {
+      success: true,
+      message:
+        "A new verification email has been sent. Please check your inbox.",
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error("Error resending verification email: " + error.message)
+    } else {
+      throw new Error("Error resending verification email")
     }
   }
 }
