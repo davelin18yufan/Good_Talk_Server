@@ -58,17 +58,7 @@ export type RegisterResponseDto =
 /**
  * Response Data Transfer Object for user login.
  */
-export type LoginResponseDto =
-  | {
-      user: {
-        id: string
-        username: string
-        email: string
-      }
-      token: string
-      success: boolean
-    }
-  | IMessages
+export type LoginResponseDto = RegisterResponseDto
 
 /**
  * Payload structure for JWT token.
@@ -95,15 +85,6 @@ export interface RequestResetDto {
 }
 
 /**
- * `Request` reset password response.
- */
-export interface RequestResetResponseDto {
-  success: boolean
-  message: string
-  resetToken?: string // Would normally not be returned, just sent via email
-}
-
-/**
  * Reset password request.
  */
 export interface ResetPasswordRequestDto {
@@ -115,7 +96,14 @@ export interface ResetPasswordRequestDto {
 /**
  * Reset password response
  */
-export interface ResetPasswordResponseDto {
-  success: boolean
-  message: string
+export interface ResetPasswordResponseDto extends IMessages {}
+
+export type TokenType = "resetToken" | "emailVerificationToken"
+
+export interface ResetTokenAndExpiryOptions {
+  email: string
+  tokenType: TokenType
+  expiryDuration: number // milliseconds
+  checkEmailVerified?: boolean
+  returnRawToken?: boolean
 }

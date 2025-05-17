@@ -8,7 +8,13 @@ import type {
 } from "../types/Auth"
 import * as authService from "@/services/auth"
 import { getUserByEmail } from "@/services/user"
-import { sendErrorResponse } from "@/helpers"
+import {
+  generateRegisterEmailTemplate,
+  generateResetEmailTemplate,
+  sendErrorResponse,
+} from "@/helpers"
+import { FRONTEND_URL, RESET_TOKEN_EXPIRY } from "@/constants/config"
+import { sendEmail } from "@/services/mail"
 
 export const register = async (
   req: AuthenticatedRequest<unknown, RegisterRequestDto>,
@@ -33,10 +39,18 @@ export const register = async (
       password,
     })
 
-    if (!result.success) {
+    if (!result.success || !("user" in result)) {
       res.status(400).json(result) // return IMessages
       return
     }
+
+    // Send email verification
+    const verifyUrl = `${FRONTEND_URL}/verify-email?token=${result.token}`
+    await sendEmail({
+      to: [result.user.email],
+      subject: "【Good Talk】帳號驗證啟用信",
+      content: generateRegisterEmailTemplate(verifyUrl, result.user.username),
+    })
 
     res.status(201).json(result) // return success data
   } catch (error) {
@@ -85,8 +99,31 @@ export const requestReset = async (
       return
     }
 
-    // Will send an email with the reset link here
-    await authService.requestPasswordReset({ email })
+    // Reset token and expiry
+    const {
+      token: resetToken,
+      user,
+      message,
+      success,
+    } = await authService.resetTokenAndExpiry({
+      email,
+      tokenType: "resetToken",
+      expiryDuration: RESET_TOKEN_EXPIRY,
+      checkEmailVerified: false,
+      returnRawToken: true,
+    })
+
+    if (!success || !user) {
+      throw new Error(message)
+    }
+
+    // send reset email
+    const resetLink = `${FRONTEND_URL}/reset-password?token=${resetToken}`
+    await sendEmail({
+      to: [user.email],
+      subject: "Password Reset Request",
+      content: generateResetEmailTemplate(resetLink, user.username),
+    })
 
     // Always return 200 even if user doesn't exist (security best practice)
     res.status(200).json({
@@ -186,8 +223,31 @@ export const resendVerificationEmail = async (
       return
     }
 
-    // Will send an email with the reset link here
-    await authService.resendVerificationEmail({ email })
+    // reset token and expiry
+    const {
+      token: verificationToken,
+      user,
+      success,
+      message,
+    } = await authService.resetTokenAndExpiry({
+      email,
+      tokenType: "emailVerificationToken",
+      expiryDuration: RESET_TOKEN_EXPIRY,
+      checkEmailVerified: true,
+      returnRawToken: true,
+    })
+
+    if (!success || !user) {
+      throw new Error(message)
+    }
+
+    // send verification email
+    const verifyUrl = `${FRONTEND_URL}/verify-email?token=${verificationToken}`
+    await sendEmail({
+      to: [user.email],
+      subject: "Resend Email Verification",
+      content: generateRegisterEmailTemplate(verifyUrl, user?.username),
+    })
 
     // Always return 200 even if user doesn't exist (security best practice)
     res.status(200).json({
