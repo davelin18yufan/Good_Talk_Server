@@ -4,6 +4,7 @@ export interface CreateUserDto {
   passwordHash: string
   loginAttempts?: number
   lastFailedLogin?: Date
+  isEMailVerified?: boolean
 }
 
 export interface UpdateUserDto {

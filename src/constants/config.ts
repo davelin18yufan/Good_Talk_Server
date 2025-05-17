@@ -1,26 +1,31 @@
-import { config } from 'dotenv'
+import { config } from "dotenv"
 
-config();
+config()
 
-export const { 
-  PORT_APP, 
-  HOST_APP,
-  NODE_ENV
-} = process.env 
+export const { PORT_APP, HOST_APP, NODE_ENV } = process.env
 
+// eslint-disable-next-line no-constant-binary-expression
 export const DATABASE_PREFIX = `"${process.env.DATABASE_PREFIX}"` || "GoodTalk"
 
 // Frontend
-export const FRONTEND_URL = "http://localhost:3000"
-export const BACKEND_URL = "http://localhost:5137"
+export const FRONTEND_URL =
+  NODE_ENV === "production"
+    ? process.env.FRONTEND_URL_PROD
+    : "http://localhost:3000"
+
+export const BACKEND_URL =
+  NODE_ENV === "production"
+    ? process.env.BACKEND_URL_PROD
+    : "http://localhost:5137"
 
 // Auth
-export const JWT_SECRET = process.env.JWT_SECRET || "secret" 
+export const JWT_SECRET = process.env.JWT_SECRET || "secret"
 export const MAX_LOGIN_ATTEMPTS = 5
 export const LOCKOUT_DURATION = 30 * 60 * 1000 // 30 min.
 export const SALT = process.env.SALT || 10
-export const RESET_TOKEN_EXPIRY = 3600000; // 1 hour in milliseconds
+export const RESET_TOKEN_EXPIRY = 3600000 // 1 hour in milliseconds
 
-// Email
-export const EMAIL_SENDER = process.env.EMAIL_SENDER || "davelin30630@gmail.com"
+//TODO: Email server has to be set up
+export const EMAIL_SERVER_DOMAIN =
+  process.env.EMAIL_SENDER || "davelin30630@gmail.com"
 export const RESEND_API_KEY = process.env.RESEND_API_KEY

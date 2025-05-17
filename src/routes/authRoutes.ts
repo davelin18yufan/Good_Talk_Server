@@ -6,6 +6,7 @@ import {
   register,
   requestReset,
   resetPassword,
+  verifyEmail,
 } from "../controllers/authController"
 
 const router = Router()
@@ -22,7 +23,7 @@ const validateLogin = [
   body("password").exists(),
 ]
 
-const validateForgotPassword = [body("email").isEmail().normalizeEmail()]
+const validateEmailOnly = [body("email").isEmail().normalizeEmail()]
 
 const validateResetPassword = [
   body("email").isEmail().normalizeEmail(),
@@ -38,13 +39,24 @@ const validateResetPassword = [
   ), // confirm password
 ]
 
+const validateEmailVerification = [
+  body("email").isEmail().normalizeEmail(),
+  body("token").exists(),
+]
+
 router.post("/register", validateRegistration, asyncHandler(register))
 router.post("/login", validateLogin, asyncHandler(login))
 router.post(
-  "/forgot-password",
-  validateForgotPassword,
-  asyncHandler(requestReset)
+  "/verify-email",
+  validateEmailVerification,
+  asyncHandler(verifyEmail)
 )
+router.post(
+  "/resend-verification",
+  validateEmailOnly,
+  asyncHandler(verifyEmail)
+)
+router.post("/forgot-password", validateEmailOnly, asyncHandler(requestReset))
 router.post(
   "/reset-password",
   validateResetPassword,

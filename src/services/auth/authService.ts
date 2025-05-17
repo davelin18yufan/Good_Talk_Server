@@ -1,25 +1,22 @@
 import { prisma } from "@/database"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
-import {
+import type {
   RegisterRequestDto,
   LoginResponseDto,
   RegisterResponseDto,
   LoginRequestDto,
   ResetPasswordRequestDto,
   ResetPasswordResponseDto,
-  RequestResetResponseDto,
-  RequestResetDto,
+  ResetTokenAndExpiryOptions,
+  IMessages,
 } from "@/types"
 import {
   JWT_SECRET,
   MAX_LOGIN_ATTEMPTS,
   LOCKOUT_DURATION,
   SALT,
-  RESET_TOKEN_EXPIRY,
-  FRONTEND_URL,
 } from "@/constants/config"
-import { sendResetEmail } from "../mail/emailService"
 import crypto from "node:crypto"
 
 export const registerUser = async (
@@ -37,12 +34,23 @@ export const registerUser = async (
     //* 2. encrypt password
     const hashedPassword = await bcrypt.hash(body.password, +SALT)
 
-    //* 3. create user
+    //* 3. generate email verification token
+    const verificationToken = crypto.randomBytes(32).toString("hex")
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(verificationToken)
+      .digest("hex")
+
+    const expiryDate = new Date(Date.now() + 1000 * 60 * 60 * 2) // 2 hours
+
+    //* 4. create user
     const user = await prisma.users.create({
       data: {
         username: body.username,
         email: body.email,
         passwordHash: hashedPassword,
+        emailVerificationToken: hashedToken,
+        emailVerificationTokenExpiry: expiryDate,
       },
     })
 
@@ -53,6 +61,7 @@ export const registerUser = async (
 
     return {
       success: true,
+      message: "User registered successfully",
       user: {
         id: user.id,
         username: user.username,
@@ -69,12 +78,64 @@ export const registerUser = async (
   }
 }
 
+export const verifyUserEmail = async ({
+  email,
+  token,
+}: {
+  email: string
+  token: string
+}): Promise<IMessages> => {
+  try {
+    // Hash the provided token to compare with stored hash
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex")
+
+    // Find user with email and check verification token that hasn't expired
+    const user = await prisma.users.findFirst({
+      where: {
+        email,
+        emailVerificationToken: hashedToken,
+        emailVerificationTokenExpiry: {
+          gt: new Date(), // greater than
+        },
+      },
+    })
+
+    if (!user) {
+      return {
+        success: false,
+        message: "Invalid or expired email verification token",
+      }
+    }
+
+    // Update user to mark email as verified and clear the token fields
+    await prisma.users.update({
+      where: { id: user.id },
+      data: {
+        isEmailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationTokenExpiry: null,
+      },
+    })
+
+    return {
+      success: true,
+      message: "Email verified successfully",
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error("Error verifying email: " + error.message)
+    } else {
+      throw new Error("Error verifying email")
+    }
+  }
+}
+
 export const loginUser = async ({
   email,
   password,
 }: LoginRequestDto): Promise<LoginResponseDto> => {
   try {
-    //* 1. check if user exists
+    //* 1. check if user exists and email is valid
     const user = await prisma.users.findUnique({
       where: { email },
     })
@@ -82,6 +143,14 @@ export const loginUser = async ({
     if (!user) {
       // if account not found, simply return.
       return { success: false, message: "User not found" }
+    }
+
+    // check if user is verified
+    if (!user.isEmailVerified) {
+      return {
+        success: false,
+        message: "Please verify your email before logging in.",
+      }
     }
 
     //* 2. if user exists
@@ -153,64 +222,94 @@ export const loginUser = async ({
 }
 
 /**
- * Request password reset - creates and stores a reset token
+ * 支援產生並儲存使用者的 Token（例如：重設密碼或信箱驗證）。
+ *
+ * @param {ResetTokenAndExpiryOptions} params
+ * @param {string} params.email - User Email
+ * @param {"resetToken" | "emailVerificationToken"} params.tokenType - reset token 欄位名稱
+ * @param {number} params.expiryDuration - token 有效時間（millisecond）
+ * @param {boolean} [params.checkEmailVerified=false] - 是否檢查使用者信箱是否已驗證（通常用在驗證信流程）
+ * @param {boolean} [params.returnRawToken=false] - 是否回傳原始 token（非 hash），建議用於寄信
+ *
+ * @returns  回傳結果物件，包含成功訊息與必要資訊（視需求附上 raw token 和使用者資訊）
  */
-export const requestPasswordReset = async ({
+export const resetTokenAndExpiry = async ({
   email,
-}: RequestResetDto): Promise<RequestResetResponseDto> => {
+  tokenType,
+  expiryDuration,
+  checkEmailVerified = false,
+  returnRawToken = false,
+}: ResetTokenAndExpiryOptions): Promise<
+  IMessages & {
+    token?: string
+    user?: {
+      id: string
+      username: string
+      email: string
+    }
+  }
+> => {
   try {
-    // Check if user exists
     const user = await prisma.users.findUnique({
       where: { email },
     })
 
     if (!user) {
-      //! For security, still return success even if user doesn't exist
+      const defaultMsg =
+        tokenType === "resetToken"
+          ? "If your email exists in our system, you will receive a password reset link."
+          : "User not found"
+      //! For security, still return success in reset password even if user doesn't exist
       //! This prevents user enumeration attacks
+      return { success: tokenType === "resetToken", message: defaultMsg }
+    }
+
+    if (checkEmailVerified && user.isEmailVerified) {
       return {
-        success: true,
-        message:
-          "If your email exists in our system, you will receive a password reset link.",
+        success: false,
+        message: "Email is already verified",
       }
     }
 
-    // Generate a secure random token (synchronous version)
-    const resetToken = crypto.randomBytes(32).toString("hex")
-
-    // Hash the token for storage using SHA-256
-    // This follows the pattern in the original code but uses the API correctly
+    // Generate a new token and hash it
+    const rawToken = crypto.randomBytes(32).toString("hex")
     const hashedToken = crypto
       .createHash("sha256")
-      .update(resetToken)
+      .update(rawToken)
       .digest("hex")
+    const expiry = new Date(Date.now() + expiryDuration)
 
-    // Set expiry time
-    const tokenExpiry = new Date(Date.now() + RESET_TOKEN_EXPIRY)
-
-    // Store the token in the database
     await prisma.users.update({
       where: { id: user.id },
       data: {
-        resetToken: hashedToken,
-        resetTokenExpiry: tokenExpiry,
+        [tokenType]: hashedToken,
+        [`${tokenType}Expiry`]: expiry,
       },
     })
 
-    // send email
-    const resetLink = `${FRONTEND_URL}/reset-password?token=${resetToken}`
-    await sendResetEmail(user.email, resetLink)
+    const successMsg =
+      tokenType === "resetToken"
+        ? "If your email exists in our system, you will receive a password reset link."
+        : "A new verification email has been sent. Please check your inbox."
 
     return {
       success: true,
-      message:
-        "If your email exists in our system, you will receive a password reset link.",
+      message: successMsg,
+      ...(returnRawToken && {
+        token: rawToken,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+        },
+      }),
     }
   } catch (error) {
-    if (error instanceof Error) {
-      throw new Error("Error requesting password reset: " + error.message)
-    } else {
-      throw new Error("Error requesting password reset")
-    }
+    throw new Error(
+      `Error resetting ${tokenType}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    )
   }
 }
 

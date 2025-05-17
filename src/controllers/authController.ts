@@ -1,5 +1,5 @@
-import { Response } from "express"
-import {
+import type { Response } from "express"
+import type {
   AuthenticatedRequest,
   RegisterRequestDto,
   LoginRequestDto,
@@ -8,7 +8,13 @@ import {
 } from "../types/Auth"
 import * as authService from "@/services/auth"
 import { getUserByEmail } from "@/services/user"
-import { sendErrorResponse } from "@/helpers"
+import {
+  generateRegisterEmailTemplate,
+  generateResetEmailTemplate,
+  sendErrorResponse,
+} from "@/helpers"
+import { FRONTEND_URL, RESET_TOKEN_EXPIRY } from "@/constants/config"
+import { sendEmail } from "@/services/mail"
 
 export const register = async (
   req: AuthenticatedRequest<unknown, RegisterRequestDto>,
@@ -33,10 +39,18 @@ export const register = async (
       password,
     })
 
-    if (!result.success) {
+    if (!result.success || !("user" in result)) {
       res.status(400).json(result) // return IMessages
       return
     }
+
+    // Send email verification
+    const verifyUrl = `${FRONTEND_URL}/verify-email?token=${result.token}`
+    await sendEmail({
+      to: [result.user.email],
+      subject: "【Good Talk】帳號驗證啟用信",
+      content: generateRegisterEmailTemplate(verifyUrl, result.user.username),
+    })
 
     res.status(201).json(result) // return success data
   } catch (error) {
@@ -85,7 +99,31 @@ export const requestReset = async (
       return
     }
 
-    await authService.requestPasswordReset({ email })
+    // Reset token and expiry
+    const {
+      token: resetToken,
+      user,
+      message,
+      success,
+    } = await authService.resetTokenAndExpiry({
+      email,
+      tokenType: "resetToken",
+      expiryDuration: RESET_TOKEN_EXPIRY,
+      checkEmailVerified: false,
+      returnRawToken: true,
+    })
+
+    if (!success || !user) {
+      throw new Error(message)
+    }
+
+    // send reset email
+    const resetLink = `${FRONTEND_URL}/reset-password?token=${resetToken}`
+    await sendEmail({
+      to: [user.email],
+      subject: "Password Reset Request",
+      content: generateResetEmailTemplate(resetLink, user.username),
+    })
 
     // Always return 200 even if user doesn't exist (security best practice)
     res.status(200).json({
@@ -93,10 +131,6 @@ export const requestReset = async (
       message:
         "If your email exists in our system, you will receive a password reset link",
     })
-
-    //? In production, send an email with the reset link here
-    //? The reset link would contain the token returned from requestPasswordReset
-    //? But don't include the actual token in the API response
   } catch (error) {
     console.error("Password reset request error:", error)
     sendErrorResponse(res, 500, "Error during registration", error)
@@ -113,10 +147,10 @@ export const resetPassword = async (
   try {
     const { token, newPassword, confirmPassword } = req.body
 
-    if(newPassword !== confirmPassword){
+    if (newPassword !== confirmPassword) {
       res.status(400).json({
         success: false,
-        message: "Two password are not matched."
+        message: "Two password are not matched.",
       })
     }
 
@@ -140,7 +174,89 @@ export const resetPassword = async (
     sendErrorResponse(
       res,
       500,
-      "An error occurred while resetting your password", error
+      "An error occurred while resetting your password",
+      error
     )
+  }
+}
+
+export const verifyEmail = async (
+  req: AuthenticatedRequest<unknown, { email: string; token: string }>,
+  res: Response
+) => {
+  try {
+    const { email, token } = req.body
+
+    if (!email || !token) {
+      res.status(400).json({
+        success: false,
+        message: "Email and token are required.",
+      })
+      return
+    }
+
+    const result = await authService.verifyUserEmail({ email, token })
+
+    if (result.success) {
+      res.status(200).json(result)
+    } else {
+      res.status(400).json(result)
+    }
+  } catch (error) {
+    console.error("Email verification error:", error)
+    sendErrorResponse(res, 500, "Error during email verification", error)
+  }
+}
+
+export const resendVerificationEmail = async (
+  req: AuthenticatedRequest<unknown, { email: string }>,
+  res: Response
+) => {
+  try {
+    const { email } = req.body
+
+    if (!email) {
+      res.status(400).json({
+        success: false,
+        message: "Email is required",
+      })
+      return
+    }
+
+    // reset token and expiry
+    const {
+      token: verificationToken,
+      user,
+      success,
+      message,
+    } = await authService.resetTokenAndExpiry({
+      email,
+      tokenType: "emailVerificationToken",
+      expiryDuration: RESET_TOKEN_EXPIRY,
+      checkEmailVerified: true,
+      returnRawToken: true,
+    })
+
+    if (!success || !user) {
+      throw new Error(message)
+    }
+
+    // send verification email
+    const verifyUrl = `${FRONTEND_URL}/verify-email?token=${verificationToken}`
+    await sendEmail({
+      to: [user.email],
+      subject: "Resend Email Verification",
+      content: generateRegisterEmailTemplate(verifyUrl, user?.username),
+    })
+
+    // Always return 200 even if user doesn't exist (security best practice)
+    res.status(200).json({
+      success: true,
+      message:
+        "If your email exists in our system, you will receive a verification link",
+    })
+  } catch (error) {
+    console.error("Resend verification email error:", error)
+    sendErrorResponse(res, 500, "Error during registration", error)
   }
 }
